@@ -1,39 +1,34 @@
 ---
 name: Bug report
-about: Report a bug in the ASCOM MCP Server
-title: '[BUG] '
+about: Create a report to help us improve
+title: ''
 labels: bug
 assignees: ''
 
 ---
 
 **Describe the bug**
-A clear description of what the bug is.
+Clear, concise description of the bug.
 
 **To Reproduce**
 Steps to reproduce:
-1. Start server with '...'
-2. Connect to device '...'
-3. Execute command '...'
-4. See error
+1. Connect to '...'
+2. Execute command '...'
+3. See error
 
 **Expected behavior**
 What you expected to happen.
 
-**Actual behavior**
-What actually happened.
+**Environment:**
+ - OS: [e.g. macOS 14.5]
+ - Python: [e.g. 3.12]
+ - mcp-server-ascom version: [e.g. 0.2.0]
+ - ASCOM device: [e.g. Seestar S50]
 
 **Logs**
 ```
-Paste relevant log output here
+Paste relevant logs here
 ```
-
-**Environment:**
- - OS: [e.g. Windows 11, macOS 14, Ubuntu 22.04]
- - Python version: [e.g. 3.11.5]
- - ASCOM MCP version: [e.g. 0.1.0]
- - ASCOM Platform version: [if applicable]
- - Device type: [e.g. Celestron NexStar 8SE]
 
 **Additional context**
 Any other context about the problem.
