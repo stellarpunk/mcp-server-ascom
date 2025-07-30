@@ -73,16 +73,27 @@ pytest -v
 - Reference issues: `Fix #123`
 - Atomic commits
 
-## Testing Devices
+## Testing
+
+### Test Framework
+We use an extensible testing framework with base classes:
+
+```python
+from tests.base import BaseToolTest
+from tests.fixtures import create_mock_device
+
+class TestYourDevice(BaseToolTest):
+    tool_class = YourDeviceTools
+    device_type = "YourDevice"
+```
+
+See `tests/templates/` for complete examples.
 
 ### Without Physical Devices
-Use mock fixtures in tests:
+Use the device factory:
 ```python
-@pytest.fixture
-def mock_telescope():
-    telescope = MagicMock()
-    telescope.CanSlew = True
-    return telescope
+mock_telescope = create_telescope_mock()
+mock_focuser = create_focuser_mock(Position=25000)
 ```
 
 ### With Physical Devices

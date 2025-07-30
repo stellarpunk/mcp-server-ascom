@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "ascom": {
+      "command": "mcp-server-ascom",
+      "args": [],
+      "env": {
+        "LOG_LEVEL": "INFO",
+        "ASCOM_DISCOVERY_TIMEOUT": "10"
+      }
+    },
+    "ascom-dev": {
+      "command": "python",
+      "args": ["-m", "ascom_mcp"],
+      "cwd": "/path/to/mcp-server-ascom",
+      "env": {
+        "PYTHONPATH": "/path/to/mcp-server-ascom/src",
+        "LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}

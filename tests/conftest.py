@@ -1,17 +1,11 @@
 """Pytest configuration and fixtures."""
 
 import asyncio
-import json
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
-from mcp.types import (
-    InitializeRequest,
-    ListToolsRequest,
-    CallToolRequest,
-    TextContent
-)
+from mcp.types import CallToolRequest, InitializeRequest, ListToolsRequest
 
 
 @pytest.fixture
@@ -87,7 +81,7 @@ def mock_discovery_response():
         },
         {
             "DeviceName": "Mock Camera",
-            "DeviceType": "Camera", 
+            "DeviceType": "Camera",
             "DeviceNumber": 0,
             "UniqueID": "mock-camera-001",
             "Host": "localhost",
@@ -101,10 +95,10 @@ def mock_discovery_response():
 async def mock_device_manager(mock_telescope, mock_camera):
     """Mock device manager with test devices."""
     from ascom_mcp.devices.manager import DeviceManager
-    
+
     manager = DeviceManager()
     manager._session = MagicMock()
-    
+
     # Mock discovery
     async def mock_discover(timeout=5.0):
         from ascom_mcp.devices.manager import DeviceInfo
@@ -126,14 +120,14 @@ async def mock_device_manager(mock_telescope, mock_camera):
         ]
         manager._available_devices = {d.id: d for d in devices}
         return devices
-    
+
     manager.discover_devices = mock_discover
-    
+
     # Mock alpyca constructors
     import alpyca
     alpyca.Telescope = MagicMock(return_value=mock_telescope)
     alpyca.Camera = MagicMock(return_value=mock_camera)
-    
+
     await manager.initialize()
     return manager
 
@@ -142,21 +136,21 @@ async def mock_device_manager(mock_telescope, mock_camera):
 async def mcp_server(mock_device_manager):
     """Create MCP server with mocked devices."""
     from ascom_mcp.server import AscomMCPServer
-    
+
     server = AscomMCPServer()
-    
+
     # Replace device manager with mock
     server.device_manager = mock_device_manager
-    
+
     # Initialize tools
+    from ascom_mcp.tools.camera import CameraTools
     from ascom_mcp.tools.discovery import DiscoveryTools
     from ascom_mcp.tools.telescope import TelescopeTools
-    from ascom_mcp.tools.camera import CameraTools
-    
+
     server.discovery_tools = DiscoveryTools(mock_device_manager)
     server.telescope_tools = TelescopeTools(mock_device_manager)
     server.camera_tools = CameraTools(mock_device_manager)
-    
+
     return server
 
 
@@ -179,7 +173,7 @@ def list_tools_request():
 @pytest.fixture
 def call_tool_request():
     """Factory for creating tool call requests."""
-    def _make_request(tool_name: str, arguments: Dict[str, Any]):
+    def _make_request(tool_name: str, arguments: dict[str, Any]):
         return CallToolRequest(
             name=tool_name,
             arguments=arguments
