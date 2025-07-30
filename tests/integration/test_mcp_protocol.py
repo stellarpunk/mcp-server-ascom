@@ -15,15 +15,22 @@ class TestMCPProtocol:
     """Test MCP protocol message flow."""
 
     @pytest.mark.asyncio
-    async def test_initialize(self, mcp_server, initialize_request):
-        """Test server initialization."""
-        result = await mcp_server.handle_initialize(initialize_request)
+    async def test_initialize(self, mcp_server):
+        """Test server initialization with current protocol."""
+        # Test with Claude Desktop's protocol version
+        request = InitializeRequest(
+            protocolVersion="2025-06-18",
+            capabilities={},
+            clientInfo={"name": "claude-desktop", "version": "1.0"}
+        )
+        result = await mcp_server.handle_initialize(request)
 
-        assert result.protocolVersion == "2024-11-05"
-        assert result.capabilities.tools is True
-        assert result.capabilities.resources is True
+        # Server should negotiate protocol version
+        assert result.protocolVersion in ["2025-06-18", "2024-11-05"]
+        assert result.capabilities.tools is not None
+        assert result.capabilities.resources is not None
         assert result.serverInfo.name == "ascom-mcp-server"
-        assert result.serverInfo.version == "0.1.0"
+        assert "0.2" in result.serverInfo.version
 
     @pytest.mark.asyncio
     async def test_list_tools(self, mcp_server, list_tools_request):

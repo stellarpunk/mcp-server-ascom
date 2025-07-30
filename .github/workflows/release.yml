@@ -1,41 +1,16 @@
-name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-permissions:
-  contents: write
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-    
-    - name: Build packages
-      run: python -m build
-    
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/*
-        generate_release_notes: true
-    
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-      run: |
-        twine upload dist/*
+# This workflow is replaced by ci-cd.yml which provides:
+# - Better testing before release
+# - Test PyPI validation
+# - Post-release verification
+# 
+# To release:
+# 1. Push to main branch (triggers tests)
+# 2. Create and push a tag: git tag v0.2.4 && git push --tags
+# 3. CI/CD will automatically:
+#    - Run all tests
+#    - Build packages
+#    - Upload to Test PyPI
+#    - Test installation
+#    - Upload to PyPI
+#    - Create GitHub release
+#    - Verify final package works
