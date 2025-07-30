@@ -14,13 +14,22 @@ Control ASCOM astronomy equipment through AI assistants.
 - Non-blocking async operations
 - Type-safe with full test coverage
 
-## Quick Start
+## Installation
 
 ```bash
+# From PyPI (when published)
 pip install mcp-server-ascom
+
+# Development
+git clone https://github.com/astronomy-tools/mcp-server-ascom.git
+cd mcp-server-ascom
+./install.sh
 ```
 
-Add to Claude Desktop config:
+## Configuration
+
+### Claude Desktop
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 ```json
 {
   "mcpServers": {
@@ -31,7 +40,16 @@ Add to Claude Desktop config:
 }
 ```
 
-Then: "Connect to my telescope" → "Point at M31" → "Take a 30 second exposure"
+### MCP Inspector (Testing)
+```bash
+npm install -g @modelcontextprotocol/inspector
+mcp-inspector python -m ascom_mcp
+```
+
+## Usage
+
+Start conversation: "Connect to my telescope"  
+Then: "Point at M31" → "Take a 30 second exposure"
 
 ## Supported Equipment
 

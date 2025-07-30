@@ -117,6 +117,8 @@ class DeviceManager:
                     logger.info(f"Discovered: {device_info.name} ({device_info.type}) at {device_info.host}:{device_info.port}")
                     
                 logger.info(f"Discovery complete: found {len(found_devices)} devices")
+                if not found_devices:
+                    logger.warning("No ASCOM devices found on network. Ensure devices are powered on and connected.")
                 return found_devices
                 
             except Exception as e:

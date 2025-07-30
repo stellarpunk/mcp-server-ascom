@@ -436,7 +436,33 @@ def create_server():
 
 async def main():
     """Main entry point for running the server."""
+    import sys
+    import argparse
     from mcp.server.stdio import stdio_server
+    
+    # Handle command line arguments
+    parser = argparse.ArgumentParser(
+        description="ASCOM MCP Server - Control astronomy equipment through AI"
+    )
+    parser.add_argument(
+        "--version", 
+        action="version", 
+        version=f"mcp-server-ascom {__import__('ascom_mcp').__version__}"
+    )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default=os.getenv("LOG_LEVEL", "INFO"),
+        help="Set logging level"
+    )
+    
+    args = parser.parse_args()
+    
+    # Update logging level
+    logging.getLogger().setLevel(getattr(logging, args.log_level))
+    
+    logger.info(f"Starting ASCOM MCP Server v{__import__('ascom_mcp').__version__}")
+    logger.info("Use --help for options")
     
     server = create_server()
     
