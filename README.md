@@ -26,7 +26,7 @@ Control astronomy equipment through AI. MCP 2025-06-18 compliant.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone and install
-git clone https://github.com/astronomy-tools/mcp-server-ascom.git
+git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -35,7 +35,7 @@ uv pip install -e .
 
 ### Option 2: Using pip with venv
 ```bash
-git clone https://github.com/astronomy-tools/mcp-server-ascom.git
+git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -44,7 +44,7 @@ pip install -e .
 
 ### Option 3: Quick install script
 ```bash
-git clone https://github.com/astronomy-tools/mcp-server-ascom.git
+git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
 ./install.sh
 ```
@@ -110,7 +110,7 @@ ASCOM Alpaca devices: Telescopes. Cameras. Focusers. Filter wheels. Domes.
 
 ### Setup
 ```bash
-git clone https://github.com/astronomy-tools/mcp-server-ascom.git
+git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
 
 # Create virtual environment (choose one)
