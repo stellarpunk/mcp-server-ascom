@@ -10,6 +10,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import astropy.coordinates as coord
 
+from .base import BaseDeviceTools
 from ..devices.manager import DeviceManager
 from ..utils.errors import (
     DeviceNotFoundError, 
@@ -21,11 +22,8 @@ from ..utils.errors import (
 logger = logging.getLogger(__name__)
 
 
-class TelescopeTools:
+class TelescopeTools(BaseDeviceTools):
     """Tools for controlling ASCOM telescopes."""
-    
-    def __init__(self, device_manager: DeviceManager):
-        self.device_manager = device_manager
         
     async def connect(self, device_id: str) -> Dict[str, Any]:
         """Connect to a telescope."""
