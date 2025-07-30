@@ -64,3 +64,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 MIT - see [LICENSE](LICENSE)
+
+## See Also
+
+- [Seestar S50 Integration Guide](docs/seestar_integration.md)
