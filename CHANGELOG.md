@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2025-07-30
+
+### Fixed
+- CLI entry point - added synchronous wrapper for `mcp-server-ascom` command
+- Removed deprecated license classifier per modern packaging standards
+
 ## [0.2.0] - 2025-07-30
 
 MCP 2025-06-18. Modern. Fast. Secure.
