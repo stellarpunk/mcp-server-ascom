@@ -543,9 +543,7 @@ async def main():
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream=read_stream,
-            write_stream=write_stream,
-            # Run initialization in server.run()
-            initialize_fn=server.handle_initialize
+            write_stream=write_stream
         )
 
 

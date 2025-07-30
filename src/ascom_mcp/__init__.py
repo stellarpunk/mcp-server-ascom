@@ -12,7 +12,7 @@ Features:
 - Natural language astronomy targeting (e.g., "Point at M31")
 """
 
-__version__ = "0.2.1"  # Updated for MCP 2025-06-18 compliance
+__version__ = "0.2.2"  # Updated for MCP 2025-06-18 compliance
 
 from .server import create_server
 
