@@ -2,7 +2,8 @@
 
 [![MCP](https://img.shields.io/badge/MCP-2025--06--18-brightgreen.svg)](https://modelcontextprotocol.io)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/astronomy-tools/mcp-server-ascom/workflows/Test/badge.svg)](https://github.com/astronomy-tools/mcp-server-ascom/actions)
+[![PyPI](https://img.shields.io/pypi/v/mcp-server-ascom.svg)](https://pypi.org/project/mcp-server-ascom/)
+[![Tests](https://github.com/stellarpunk/mcp-server-ascom/workflows/Test/badge.svg)](https://github.com/stellarpunk/mcp-server-ascom/actions)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Control astronomy equipment through AI. MCP 2025-06-18 compliant.
@@ -20,33 +21,21 @@ Control astronomy equipment through AI. MCP 2025-06-18 compliant.
 
 ## Installation
 
-### Option 1: Using uv (Recommended)
+### Option 1: pip install (Simplest)
 ```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Clone and install
-git clone https://github.com/stellarpunk/mcp-server-ascom.git
-cd mcp-server-ascom
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
+pip install mcp-server-ascom
 ```
 
-### Option 2: Using pip with venv
+### Option 2: uvx (No install needed)
+```bash
+uvx mcp-server-ascom
+```
+
+### Option 3: From source
 ```bash
 git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .
-```
-
-### Option 3: Quick install script
-```bash
-git clone https://github.com/stellarpunk/mcp-server-ascom.git
-cd mcp-server-ascom
-./install.sh
 ```
 
 **Note:** The `alpyca` package (ASCOM library) imports as `alpaca` in Python code.
