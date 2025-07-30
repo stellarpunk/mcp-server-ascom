@@ -7,8 +7,15 @@ Provides telescope control capabilities including goto, tracking, and parking.
 import logging
 from typing import Any
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+# Make astropy optional for now due to environment issues
+try:
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
+    ASTROPY_AVAILABLE = True
+except ImportError:
+    ASTROPY_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("Astropy not available - celestial object lookups will be disabled")
 
 from ..utils.errors import (
     DeviceBusyError,
@@ -167,6 +174,14 @@ class TelescopeTools(BaseDeviceTools):
                         'message': f"Solar system object '{object_name}' requires ephemeris calculation (coming soon)"
                     }
 
+                # Check if astropy is available
+                if not ASTROPY_AVAILABLE:
+                    return {
+                        'success': False,
+                        'error': 'Celestial object lookup unavailable',
+                        'message': 'Astropy is not available. Please use telescope_goto with RA/Dec coordinates instead.'
+                    }
+                
                 # Try to resolve as deep sky object
                 skycoord = SkyCoord.from_name(object_name)
                 ra_hours = skycoord.ra.hour
@@ -216,18 +231,35 @@ class TelescopeTools(BaseDeviceTools):
             ra = telescope.RightAscension
             dec = telescope.Declination
 
-            # Convert to string representations
-            skycoord = SkyCoord(ra=ra*u.hour, dec=dec*u.degree)
-
+            # Build position info
             position = {
                 'ra_hours': ra,
                 'dec_degrees': dec,
-                'ra_hms': skycoord.ra.to_string(unit=u.hour, sep=':', precision=1),
-                'dec_dms': skycoord.dec.to_string(unit=u.degree, sep=':', precision=0),
+            }
+            
+            # Add formatted coordinates
+            if ASTROPY_AVAILABLE:
+                skycoord = SkyCoord(ra=ra*u.hour, dec=dec*u.degree)
+                position['ra_hms'] = skycoord.ra.to_string(unit=u.hour, sep=':', precision=1)
+                position['dec_dms'] = skycoord.dec.to_string(unit=u.degree, sep=':', precision=0)
+            else:
+                # Simple formatting without astropy
+                hours = int(ra)
+                minutes = int((ra - hours) * 60)
+                seconds = ((ra - hours) * 60 - minutes) * 60
+                position['ra_hms'] = f"{hours:02d}:{minutes:02d}:{seconds:04.1f}"
+                
+                sign = '+' if dec >= 0 else '-'
+                degrees = int(abs(dec))
+                arcmin = int((abs(dec) - degrees) * 60)
+                arcsec = ((abs(dec) - degrees) * 60 - arcmin) * 60
+                position['dec_dms'] = f"{sign}{degrees:02d}:{arcmin:02d}:{arcsec:02.0f}"
+            
+            position.update({
                 'altitude': telescope.Altitude if hasattr(telescope, 'Altitude') else None,
                 'azimuth': telescope.Azimuth if hasattr(telescope, 'Azimuth') else None,
                 'sidereal_time': telescope.SiderealTime if hasattr(telescope, 'SiderealTime') else None
-            }
+            })
 
             # Get status
             status = {

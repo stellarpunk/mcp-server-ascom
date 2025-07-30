@@ -54,7 +54,28 @@ cd mcp-server-ascom
 ## Configuration
 
 ### Claude Desktop
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+
+#### Quick Setup (Recommended)
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "ascom": {
+      "command": "uvx",
+      "args": ["mcp-server-ascom"]
+    }
+  }
+}
+```
+
+This uses `uvx` to automatically handle Python environments and dependencies.
+
+#### Alternative: Direct Installation
+```bash
+pip install mcp-server-ascom
+```
+
+Then use:
 ```json
 {
   "mcpServers": {
