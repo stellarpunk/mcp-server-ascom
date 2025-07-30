@@ -1,6 +1,18 @@
-"""MCP Server for ASCOM astronomy equipment control."""
+"""
+ASCOM MCP Server - Control astronomy equipment through AI.
 
-__version__ = "0.1.0"
+A modern Model Context Protocol (MCP) server implementing the 2025-06-18 specification
+for controlling ASCOM Alpaca-compatible astronomy equipment.
+
+Features:
+- Auto-discovery of ASCOM devices on the network
+- Structured tool outputs for rich data representation
+- Optional OAuth 2.0 security integration
+- Future-ready architecture for multi-agent orchestration
+- Natural language astronomy targeting (e.g., "Point at M31")
+"""
+
+__version__ = "0.2.0"  # Updated for MCP 2025-06-18 compliance
 
 from .server import create_server
 
