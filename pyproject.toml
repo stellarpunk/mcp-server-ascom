@@ -43,7 +43,7 @@ dev = [
 ]
 
 [project.scripts]
-mcp-server-ascom = "ascom_mcp.server:main"
+mcp-server-ascom = "ascom_mcp.server:run"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
