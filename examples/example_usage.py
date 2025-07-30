@@ -14,7 +14,7 @@ from datetime import datetime
 async def example_telescope_session():
     """
     Example telescope control session.
-    
+
     This would normally be called by an AI assistant through MCP,
     but we're simulating the calls here for demonstration.
     """
@@ -22,10 +22,10 @@ async def example_telescope_session():
     print("ASCOM MCP Server - Example Telescope Session")
     print("=" * 60)
     print()
-    
+
     # In a real MCP scenario, these would be tool calls from the AI
     # Here we're simulating the workflow
-    
+
     print("1. Discovering ASCOM devices on the network...")
     print("   Tool: discover_ascom_devices")
     print("   Simulated response:")
@@ -42,7 +42,7 @@ async def example_telescope_session():
                 "connect_hint": "Use 'telescope_connect' with device_id='telescope_0'"
             },
             {
-                "id": "camera_0", 
+                "id": "camera_0",
                 "name": "ZWO ASI294MC Pro",
                 "type": "camera",
                 "host": "192.168.1.101",
@@ -53,7 +53,7 @@ async def example_telescope_session():
     }
     print(json.dumps(discovery_response, indent=2))
     print()
-    
+
     print("2. Connecting to telescope...")
     print("   Tool: telescope_connect")
     print("   Args: device_id='telescope_0'")
@@ -72,7 +72,7 @@ async def example_telescope_session():
     }
     print(json.dumps(connect_response, indent=2))
     print()
-    
+
     print("3. Getting current telescope position...")
     print("   Tool: telescope_get_position")
     print("   Simulated response:")
@@ -95,7 +95,7 @@ async def example_telescope_session():
     }
     print(json.dumps(position_response, indent=2))
     print()
-    
+
     print("4. Slewing to the Orion Nebula (M42)...")
     print("   Tool: telescope_goto_object")
     print("   Args: object_name='M42'")
@@ -118,14 +118,14 @@ async def example_telescope_session():
     }
     print(json.dumps(goto_response, indent=2))
     print()
-    
+
     print("5. Example natural language requests that AI could handle:")
     print("   - 'Show me the Andromeda Galaxy'")
-    print("   - 'Point at Jupiter'") 
+    print("   - 'Point at Jupiter'")
     print("   - 'Go to that bright star in Orion'")
     print("   - 'Park the telescope for the night'")
     print()
-    
+
     print("6. Parking telescope...")
     print("   Tool: telescope_park")
     print("   Simulated response:")
@@ -147,7 +147,7 @@ async def example_camera_session():
     print("ASCOM MCP Server - Example Camera Session")
     print("=" * 60)
     print()
-    
+
     print("1. Connecting to camera...")
     print("   Tool: camera_connect")
     print("   Args: device_id='camera_0'")
@@ -168,7 +168,7 @@ async def example_camera_session():
     }
     print(json.dumps(camera_connect, indent=2))
     print()
-    
+
     print("2. Capturing a 30-second exposure...")
     print("   Tool: camera_capture")
     print("   Args: exposure_seconds=30, light_frame=True")
@@ -198,21 +198,21 @@ def main():
     """Run example sessions."""
     print("\nASCOM MCP Server - Example Usage")
     print("================================\n")
-    
+
     print("This example demonstrates how an AI assistant would use")
     print("the ASCOM MCP server to control astronomy equipment.\n")
-    
+
     print("In a real scenario:")
     print("1. The MCP server runs as a subprocess")
     print("2. AI assistants communicate via JSON-RPC over stdio")
     print("3. Natural language gets translated to tool calls")
     print("4. Results are returned to the AI for interpretation\n")
-    
+
     # Run example sessions
     asyncio.run(example_telescope_session())
     print()
     asyncio.run(example_camera_session())
-    
+
     print("\n" + "=" * 60)
     print("Example complete!")
     print("=" * 60)

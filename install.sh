@@ -16,16 +16,32 @@ if ! python3 -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)"; the
 fi
 echo "✓ Python $python_version"
 
+# Check if we're in a virtual environment
+if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "✓ Using virtual environment: $VIRTUAL_ENV"
+    pip_cmd="pip"
+    python_cmd="python"
+else
+    echo "⚠️  No virtual environment detected"
+    echo "   Consider using: python -m venv .venv && source .venv/bin/activate"
+    echo "   Or with uv: uv venv && source .venv/bin/activate"
+    pip_cmd="pip"
+    python_cmd="python3"
+fi
+
 # Install package
 echo -e "\nInstalling package..."
-pip install -e .
+$pip_cmd install -e .
+
+# Note about alpyca/alpaca naming
+echo -e "\n📝 Note: The 'alpyca' package imports as 'alpaca'"
 
 # Verify installation
 echo -e "\nVerifying installation..."
-python -m ascom_mcp --version || echo "⚠️  Version check not yet implemented"
+$python_cmd -m ascom_mcp --version
 
 # Test import
-if python -c "from ascom_mcp import create_server; print('✓ Import successful')"; then
+if $python_cmd -c "from ascom_mcp import create_server; print('✓ Import successful')"; then
     echo "✓ Package installed correctly"
 else
     echo "❌ Import failed"

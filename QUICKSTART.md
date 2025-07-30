@@ -1,6 +1,6 @@
 # ASCOM MCP Server Quick Start
 
-Get up and running in 5 minutes.
+Get up and running in 5 minutes with the latest MCP 2025-06-18 protocol.
 
 ## 1. Install
 
@@ -16,7 +16,11 @@ cd mcp-server-ascom
 # Install inspector (once)
 npm install -g @modelcontextprotocol/inspector
 
-# Test server
+# Test server (with venv)
+./inspect.sh
+
+# Or manually:
+source .venv/bin/activate
 mcp-inspector python -m ascom_mcp
 ```
 
