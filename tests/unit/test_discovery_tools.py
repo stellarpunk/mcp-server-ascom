@@ -1,15 +1,16 @@
 """Unit tests for discovery tools."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from ascom_mcp.tools.discovery import DiscoveryTools
+import pytest
+
 from ascom_mcp.devices.manager import DeviceInfo
+from ascom_mcp.tools.discovery import DiscoveryTools
 
 
 class TestDiscoveryTools:
     """Test DiscoveryTools class."""
-    
+
     @pytest.mark.asyncio
     async def test_discover_devices_success(self):
         """Test successful device discovery."""
@@ -30,42 +31,42 @@ class TestDiscoveryTools:
             })
         ]
         mock_manager.discover_devices.return_value = mock_devices
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.discover_devices(timeout=3.0)
-        
-        assert result["success"] == True
+
+        assert result["success"] is True
         assert result["count"] == 2
         assert len(result["devices"]) == 2
         assert "connect_hint" in result["devices"][0]
         assert result["devices"][0]["connect_hint"] == "Use 'telescope_connect' with device_id='telescope_0'"
-        
+
     @pytest.mark.asyncio
     async def test_discover_devices_empty(self):
         """Test discovery with no devices found."""
         mock_manager = AsyncMock()
         mock_manager.discover_devices.return_value = []
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.discover_devices()
-        
-        assert result["success"] == True
+
+        assert result["success"] is True
         assert result["count"] == 0
         assert result["message"] == "No ASCOM devices found on network"
-        
+
     @pytest.mark.asyncio
     async def test_discover_devices_error(self):
         """Test discovery with network error."""
         mock_manager = AsyncMock()
         mock_manager.discover_devices.side_effect = Exception("Network timeout")
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.discover_devices()
-        
-        assert result["success"] == False
+
+        assert result["success"] is False
         assert "Network timeout" in result["error"]
         assert "Check network connection" in result["message"]
-        
+
     @pytest.mark.asyncio
     async def test_get_device_info_telescope(self):
         """Test getting telescope device info."""
@@ -78,16 +79,16 @@ class TestDiscoveryTools:
             "driver_info": "Test Driver v1.0"
         }
         mock_manager.get_device_info.return_value = mock_info
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.get_device_info("telescope_0")
-        
-        assert result["success"] == True
+
+        assert result["success"] is True
         assert result["device"]["type"] == "telescope"
         assert "capabilities" in result["device"]
         assert "goto" in result["device"]["capabilities"]
         assert "park" in result["device"]["capabilities"]
-        
+
     @pytest.mark.asyncio
     async def test_get_device_info_camera(self):
         """Test getting camera device info."""
@@ -98,22 +99,22 @@ class TestDiscoveryTools:
             "name": "Test Camera"
         }
         mock_manager.get_device_info.return_value = mock_info
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.get_device_info("camera_0")
-        
-        assert result["success"] == True
+
+        assert result["success"] is True
         assert "capture" in result["device"]["capabilities"]
         assert "cooling" in result["device"]["capabilities"]
-        
+
     @pytest.mark.asyncio
     async def test_get_device_info_error(self):
         """Test device info with error."""
         mock_manager = AsyncMock()
         mock_manager.get_device_info.side_effect = Exception("Device not found")
-        
+
         tools = DiscoveryTools(mock_manager)
         result = await tools.get_device_info("unknown_device")
-        
-        assert result["success"] == False
+
+        assert result["success"] is False
         assert "Device not found" in result["error"]

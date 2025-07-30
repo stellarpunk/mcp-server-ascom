@@ -1,8 +1,7 @@
 """Factory functions for creating mock ASCOM devices."""
 
-from typing import Dict, Any, Optional
+from typing import Any
 from unittest.mock import MagicMock
-from datetime import datetime
 
 from ascom_mcp.devices.manager import DeviceInfo
 
@@ -13,15 +12,15 @@ def create_mock_device(
     **capabilities: Any
 ) -> MagicMock:
     """Create a mock ASCOM device with standard properties.
-    
+
     Args:
         device_type: Type of device (Telescope, Camera, etc.)
         device_number: Device number (default 0)
         **capabilities: Device-specific capabilities
-        
+
     Returns:
         Mock device with ASCOM standard properties
-        
+
     Example:
         telescope = create_mock_device(
             "Telescope",
@@ -31,7 +30,7 @@ def create_mock_device(
         )
     """
     mock = MagicMock()
-    
+
     # Standard ASCOM properties every device must have
     mock.Connected = False
     mock.Description = f"Mock {device_type}"
@@ -40,23 +39,23 @@ def create_mock_device(
     mock.InterfaceVersion = 3
     mock.Name = f"Mock {device_type} {device_number}"
     mock.SupportedActions = []
-    
+
     # Device state
     mock._connected = False
-    
+
     # Make Connected property work properly
     def get_connected():
         return mock._connected
-        
+
     def set_connected(value):
         mock._connected = bool(value)
-        
+
     type(mock).Connected = property(get_connected, set_connected)
-    
+
     # Add device-specific capabilities
     for key, value in capabilities.items():
         setattr(mock, key, value)
-        
+
     return mock
 
 
@@ -68,14 +67,14 @@ def create_device_info(
     **extra_fields: Any
 ) -> DeviceInfo:
     """Create a DeviceInfo object for testing.
-    
+
     Args:
         device_type: Type of device
         device_number: Device number
         host: Device host
         port: Device port
         **extra_fields: Additional fields
-        
+
     Returns:
         DeviceInfo instance
     """
@@ -89,7 +88,7 @@ def create_device_info(
         "ApiVersion": 1
     }
     data.update(extra_fields)
-    
+
     return DeviceInfo(data)
 
 
@@ -102,30 +101,30 @@ def create_telescope_mock(**overrides) -> MagicMock:
         "CanSlewAltAz": True,
         "CanSlewAltAzAsync": True,
         "Slewing": False,
-        
+
         # Parking
         "CanPark": True,
         "CanSetPark": True,
         "AtPark": False,
-        
+
         # Tracking
         "CanSetTracking": True,
         "Tracking": True,
         "TrackingRate": 0,  # Sidereal
         "TrackingRates": [0, 1, 2, 3],  # Sidereal, Lunar, Solar, King
-        
+
         # Position
         "RightAscension": 0.0,
         "Declination": 0.0,
         "Altitude": 45.0,
         "Azimuth": 180.0,
         "SiderealTime": 0.0,
-        
+
         # Site info
         "SiteLatitude": 40.0,
         "SiteLongitude": -74.0,
         "SiteElevation": 10.0,
-        
+
         # Limits
         "CanSetDeclinationRate": False,
         "CanSetRightAscensionRate": False,
@@ -143,7 +142,7 @@ def create_camera_mock(**overrides) -> MagicMock:
         "CameraState": 0,  # Idle
         "ImageReady": False,
         "IsPulseGuiding": False,
-        
+
         # Sensor info
         "SensorType": 1,  # Color
         "SensorName": "Mock CMOS Sensor",
@@ -151,20 +150,20 @@ def create_camera_mock(**overrides) -> MagicMock:
         "PixelSizeY": 4.63,
         "CameraXSize": 4144,
         "CameraYSize": 2822,
-        
+
         # Binning
         "BinX": 1,
         "BinY": 1,
         "MaxBinX": 4,
         "MaxBinY": 4,
         "CanAsymmetricBin": True,
-        
+
         # Subframe
         "StartX": 0,
         "StartY": 0,
         "NumX": 4144,
         "NumY": 2822,
-        
+
         # Cooling
         "CanSetCCDTemperature": True,
         "CanGetCoolerPower": True,
@@ -173,7 +172,7 @@ def create_camera_mock(**overrides) -> MagicMock:
         "CoolerOn": False,
         "CoolerPower": 0.0,
         "HeatSinkTemperature": 25.0,
-        
+
         # Exposure
         "CanAbortExposure": True,
         "CanStopExposure": True,
@@ -182,7 +181,7 @@ def create_camera_mock(**overrides) -> MagicMock:
         "ExposureResolution": 0.001,
         "LastExposureDuration": 0.0,
         "LastExposureStartTime": "",
-        
+
         # Other
         "CanPulseGuide": True,
         "Gain": 100,
@@ -191,7 +190,7 @@ def create_camera_mock(**overrides) -> MagicMock:
         "Offset": 30,
         "OffsetMin": 0,
         "OffsetMax": 100,
-        
+
         # Methods
         "StartExposure": MagicMock(),
         "StopExposure": MagicMock(),
@@ -210,17 +209,17 @@ def create_focuser_mock(**overrides) -> MagicMock:
         "MaxIncrement": 50000,
         "Absolute": True,
         "IsMoving": False,
-        
+
         # Temperature
         "Temperature": 20.0,
         "TempComp": False,
         "TempCompAvailable": True,
-        
+
         # Capabilities
         "CanHalt": True,
         "CanStepSize": False,
         "StepSize": 1.0,
-        
+
         # Methods
         "Move": MagicMock(),
         "Halt": MagicMock()
@@ -236,7 +235,7 @@ def create_filterwheel_mock(**overrides) -> MagicMock:
         "Position": 0,
         "Names": ["Red", "Green", "Blue", "Luminance", "Ha", "OIII", "SII"],
         "FocusOffsets": [0, 0, 0, 0, -50, -50, -50],
-        
+
         # Methods
         "SetPosition": MagicMock()
     }

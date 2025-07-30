@@ -1,7 +1,6 @@
 """Common fixture data for ASCOM devices."""
 
-from typing import Dict, Any
-
+from typing import Any
 
 # Standard properties every ASCOM device must have
 standard_device_properties = {
@@ -19,7 +18,7 @@ standard_device_properties = {
 telescope_capabilities = {
     "required": [
         "RightAscension",
-        "Declination", 
+        "Declination",
         "CanSlew",
         "Slewing",
         "Tracking"
@@ -132,7 +131,7 @@ rotator_capabilities = {
 
 
 # Test data generators
-def generate_discovery_response(device_types: list[str]) -> list[Dict[str, Any]]:
+def generate_discovery_response(device_types: list[str]) -> list[dict[str, Any]]:
     """Generate a mock discovery response with multiple device types."""
     devices = []
     for i, device_type in enumerate(device_types):
@@ -148,7 +147,7 @@ def generate_discovery_response(device_types: list[str]) -> list[Dict[str, Any]]
     return devices
 
 
-def generate_error_response(error_message: str, error_code: int = 0x400) -> Dict[str, Any]:
+def generate_error_response(error_message: str, error_code: int = 0x400) -> dict[str, Any]:
     """Generate standard ASCOM error response."""
     return {
         "Value": None,
