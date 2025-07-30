@@ -14,6 +14,8 @@ import os
 from typing import Any
 
 from mcp.server import Server
+from mcp.server.models import InitializationOptions
+from mcp.server.lowlevel import NotificationOptions
 from mcp.types import (
     CallToolRequest,
     CallToolResult,
@@ -542,8 +544,16 @@ async def main():
     # Run the server using stdio transport
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
-            read_stream=read_stream,
-            write_stream=write_stream
+            read_stream,
+            write_stream,
+            InitializationOptions(
+                server_name=SERVER_NAME,
+                server_version=__version__,
+                capabilities=server.get_capabilities(
+                    notification_options=NotificationOptions(),
+                    experimental_capabilities={}
+                )
+            )
         )
 
 

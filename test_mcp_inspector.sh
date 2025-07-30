@@ -1,13 +1,12 @@
 #!/bin/bash
-echo "Testing mcp-server-ascom with MCP Inspector"
+echo "Testing local MCP server with Inspector..."
+echo "This will open MCP Inspector to test our server"
 echo ""
-echo "1. Testing PyPI version with uvx:"
-echo "   mcp-inspector uvx mcp-server-ascom"
+echo "After it opens, test these commands:"
+echo "1. tools/list"
+echo "2. tools/call discover_ascom_devices {}"
 echo ""
-echo "2. Test these tools:"
-echo "   - discover_ascom_devices"
-echo "   - telescope_connect (with a device_id from discovery)"
-echo "   - telescope_goto_object (try 'M42' or 'Orion Nebula')"
-echo ""
-echo "Starting MCP Inspector..."
-mcp-inspector uvx mcp-server-ascom
+read -p "Press Enter to start..."
+
+# Run with local Python
+mcp-inspector python -- -m ascom_mcp
