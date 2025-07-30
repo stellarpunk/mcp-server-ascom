@@ -3,7 +3,7 @@ name = "mcp-server-ascom"
 version = "0.2.0"
 description = "MCP server for ASCOM astronomy equipment control"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Stellarpunk Collective"}]
 keywords = ["mcp", "ascom", "astronomy", "telescope", "alpaca", "stellarpunk"]
 classifiers = [
@@ -18,13 +18,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
 requires-python = ">=3.10"
-
-[project.urls]
-"Homepage" = "https://github.com/stellarpunk/mcp-server-ascom"
-"Bug Tracker" = "https://github.com/stellarpunk/mcp-server-ascom/issues"
-"Repository" = "https://github.com/stellarpunk/mcp-server-ascom"
-"Organization" = "https://github.com/stellarpunk"
-
 dependencies = [
     "mcp>=1.0.0",
     "alpyca>=2.0.0",
@@ -32,6 +25,12 @@ dependencies = [
     "aiohttp>=3.9.0",
     "pydantic>=2.0.0",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/stellarpunk/mcp-server-ascom"
+"Bug Tracker" = "https://github.com/stellarpunk/mcp-server-ascom/issues"
+"Repository" = "https://github.com/stellarpunk/mcp-server-ascom"
+"Organization" = "https://github.com/stellarpunk"
 
 [project.optional-dependencies]
 dev = [
