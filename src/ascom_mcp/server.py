@@ -69,6 +69,27 @@ class AscomMCPServer(Server):
         self.telescope_tools: TelescopeTools | None = None
         self.camera_tools: CameraTools | None = None
         self.negotiated_protocol_version: str = MCP_PROTOCOL_VERSION
+        
+        # Register MCP protocol handlers
+        @self.list_tools()
+        async def _list_tools() -> list[Tool]:
+            # Call our existing handler and extract the tools list
+            result = await self.handle_list_tools(ListToolsRequest())
+            return result.tools
+        
+        @self.list_resources()
+        async def _list_resources() -> list[Resource]:
+            # Call our existing handler and extract the resources list
+            result = await self.handle_list_resources(ListResourcesRequest())
+            return result.resources
+        
+        @self.call_tool()
+        async def _call_tool(name: str, arguments: dict[str, Any] | None) -> list[Any]:
+            # Call our existing handler and return the content
+            result = await self.handle_call_tool(
+                CallToolRequest(name=name, arguments=arguments)
+            )
+            return result.content
 
     async def handle_initialize(self, request: InitializeRequest) -> InitializeResult:
         """Handle initialization request with version negotiation."""

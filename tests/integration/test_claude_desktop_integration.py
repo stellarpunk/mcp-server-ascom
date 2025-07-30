@@ -99,7 +99,12 @@ class TestClaudeDesktopIntegration:
             send_message("tools/list", {}, id=2)
             
             response = read_response()
-            assert "result" in response
+            
+            # Check for the specific error we saw in production
+            if "error" in response:
+                assert False, f"Got error response: {response['error']}"
+            
+            assert "result" in response, f"No result in response: {response}"
             tools = response["result"]["tools"]
             assert isinstance(tools, list)
             assert len(tools) > 0
