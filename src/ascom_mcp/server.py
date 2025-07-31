@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 """
+DEPRECATED: This module uses the low-level MCP Server API.
+
+As of v0.3.0, we have migrated to FastMCP from the official MCP SDK.
+Please use server_fastmcp.py instead.
+
+This file is kept for backward compatibility but will be removed in v0.4.0.
+
+Original description:
 MCP Server for ASCOM astronomy equipment control.
 
 This server bridges Model Context Protocol to ASCOM Alpaca devices,
@@ -73,23 +81,334 @@ class AscomMCPServer(Server):
         # Register MCP protocol handlers
         @self.list_tools()
         async def _list_tools() -> list[Tool]:
-            # Call our existing handler and extract the tools list
-            result = await self.handle_list_tools(ListToolsRequest())
-            return result.tools
+            # Initialize if needed
+            if self.device_manager is None:
+                await self._ensure_initialized()
+            # Return the tools directly
+            return self._get_tools_list()
         
         @self.list_resources()
         async def _list_resources() -> list[Resource]:
-            # Call our existing handler and extract the resources list
-            result = await self.handle_list_resources(ListResourcesRequest())
-            return result.resources
+            # Return the resources directly
+            return self._get_resources_list()
         
         @self.call_tool()
         async def _call_tool(name: str, arguments: dict[str, Any] | None) -> list[Any]:
-            # Call our existing handler and return the content
-            result = await self.handle_call_tool(
-                CallToolRequest(name=name, arguments=arguments)
+            # Initialize if needed
+            if self.device_manager is None:
+                await self._ensure_initialized()
+            # Call the tool and return the content
+            return await self._execute_tool(name, arguments)
+    
+    async def _ensure_initialized(self):
+        """Ensure device manager and tools are initialized."""
+        if self.device_manager is None:
+            self.device_manager = DeviceManager()
+            await self.device_manager.initialize()
+            
+            self.discovery_tools = DiscoveryTools(self.device_manager)
+            self.telescope_tools = TelescopeTools(self.device_manager)
+            self.camera_tools = CameraTools(self.device_manager)
+    
+    def _get_tools_list(self) -> list[Tool]:
+        """Get the list of available tools."""
+        return [
+            # Discovery tools
+            Tool(
+                name="discover_ascom_devices",
+                description="Discover ASCOM devices on the network",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "timeout": {
+                            "type": "number",
+                            "description": "Discovery timeout in seconds",
+                            "default": 5.0
+                        }
+                    }
+                }
+            ),
+            Tool(
+                name="get_device_info",
+                description="Get detailed information about a specific ASCOM device",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Device ID from discovery"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            # Telescope tools
+            Tool(
+                name="telescope_connect",
+                description="Connect to an ASCOM telescope",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Device ID from discovery"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            Tool(
+                name="telescope_disconnect",
+                description="Disconnect from an ASCOM telescope",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected telescope device ID"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            Tool(
+                name="telescope_goto",
+                description="Slew telescope to specific coordinates",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected telescope device ID"
+                        },
+                        "ra": {
+                            "type": "number",
+                            "description": "Right Ascension in hours (0-24)"
+                        },
+                        "dec": {
+                            "type": "number",
+                            "description": "Declination in degrees (-90 to +90)"
+                        }
+                    },
+                    "required": ["device_id", "ra", "dec"]
+                }
+            ),
+            Tool(
+                name="telescope_goto_object",
+                description="Slew telescope to a named celestial object",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected telescope device ID"
+                        },
+                        "object_name": {
+                            "type": "string",
+                            "description": (
+                                "Name of celestial object "
+                                "(e.g., 'M31', 'Orion Nebula')"
+                            )
+                        }
+                    },
+                    "required": ["device_id", "object_name"]
+                }
+            ),
+            Tool(
+                name="telescope_get_position",
+                description="Get current telescope position",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected telescope device ID"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            Tool(
+                name="telescope_park",
+                description="Park telescope at home position",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected telescope device ID"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            # Camera tools
+            Tool(
+                name="camera_connect",
+                description="Connect to an ASCOM camera",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Device ID from discovery"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
+            ),
+            Tool(
+                name="camera_capture",
+                description="Capture an image with the camera",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected camera device ID"
+                        },
+                        "exposure_seconds": {
+                            "type": "number",
+                            "description": "Exposure time in seconds"
+                        },
+                        "light_frame": {
+                            "type": "boolean",
+                            "description": "True for light frame, False for dark",
+                            "default": True
+                        }
+                    },
+                    "required": ["device_id", "exposure_seconds"]
+                }
+            ),
+            Tool(
+                name="camera_get_status",
+                description="Get current camera status",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "device_id": {
+                            "type": "string",
+                            "description": "Connected camera device ID"
+                        }
+                    },
+                    "required": ["device_id"]
+                }
             )
-            return result.content
+        ]
+    
+    def _get_resources_list(self) -> list[Resource]:
+        """Get the list of available resources."""
+        return [
+            Resource(
+                uri="ascom://server/info",
+                name="Server Information",
+                description="Information about the ASCOM MCP server",
+                mimeType="application/json"
+            ),
+            Resource(
+                uri="ascom://devices/connected",
+                name="Connected Devices",
+                description="List of currently connected ASCOM devices",
+                mimeType="application/json"
+            ),
+            Resource(
+                uri="ascom://devices/available",
+                name="Available Devices",
+                description="List of available ASCOM devices from discovery",
+                mimeType="application/json"
+            )
+        ]
+    
+    async def _execute_tool(self, tool_name: str, args: dict[str, Any] | None) -> list[Any]:
+        """Execute a tool and return the content."""
+        args = args or {}
+        
+        try:
+            # Discovery tools
+            if tool_name == "discover_ascom_devices":
+                result = await self.discovery_tools.discover_devices(
+                    timeout=args.get("timeout", 5.0)
+                )
+            elif tool_name == "get_device_info":
+                result = await self.discovery_tools.get_device_info(
+                    device_id=args["device_id"]
+                )
+            # Telescope tools
+            elif tool_name == "telescope_connect":
+                result = await self.telescope_tools.connect(
+                    device_id=args["device_id"]
+                )
+            elif tool_name == "telescope_disconnect":
+                result = await self.telescope_tools.disconnect(
+                    device_id=args["device_id"]
+                )
+            elif tool_name == "telescope_goto":
+                result = await self.telescope_tools.goto(
+                    device_id=args["device_id"],
+                    ra=args["ra"],
+                    dec=args["dec"]
+                )
+            elif tool_name == "telescope_goto_object":
+                result = await self.telescope_tools.goto_object(
+                    device_id=args["device_id"],
+                    object_name=args["object_name"]
+                )
+            elif tool_name == "telescope_get_position":
+                result = await self.telescope_tools.get_position(
+                    device_id=args["device_id"]
+                )
+            elif tool_name == "telescope_park":
+                result = await self.telescope_tools.park(
+                    device_id=args["device_id"]
+                )
+            # Camera tools
+            elif tool_name == "camera_connect":
+                result = await self.camera_tools.connect(
+                    device_id=args["device_id"]
+                )
+            elif tool_name == "camera_capture":
+                result = await self.camera_tools.capture(
+                    device_id=args["device_id"],
+                    exposure_seconds=args["exposure_seconds"],
+                    light_frame=args.get("light_frame", True)
+                )
+            elif tool_name == "camera_get_status":
+                result = await self.camera_tools.get_status(
+                    device_id=args["device_id"]
+                )
+            else:
+                raise ValueError(f"Unknown tool: {tool_name}")
+
+            # Create content for the result
+            if isinstance(result, dict):
+                # Check if error response
+                if not result.get("success", True):
+                    content = create_error_content(
+                        error_type=result.get("error_type", "tool_error"),
+                        message=result.get("error", "Unknown error"),
+                        details=result
+                    )
+                else:
+                    # Success - return structured content
+                    content = create_structured_content(
+                        result,
+                        text_fallback=self._create_fallback_text(tool_name, result)
+                    )
+            else:
+                # Simple text result
+                content = [create_text_content(str(result))]
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Tool call failed: {e}")
+            # Use structured error content
+            content = create_error_content(
+                error_type="tool_execution_error",
+                message=str(e),
+                details={"tool": tool_name, "exception": type(e).__name__}
+            )
+            return content
 
     async def handle_initialize(self, request: InitializeRequest) -> InitializeResult:
         """Handle initialization request with version negotiation."""
