@@ -16,6 +16,7 @@ from alpaca.filterwheel import FilterWheel
 from alpaca.focuser import Focuser
 from alpaca.telescope import Telescope
 
+from ..config import config
 from ..utils.errors import ConnectionError, DeviceNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class DeviceManager:
             logger.info(f"Starting device discovery (timeout: {timeout}s)")
 
             try:
-                # Use alpyca discovery - run in thread to avoid blocking
+                # First try standard alpyca discovery - run in thread to avoid blocking
                 devices = await asyncio.to_thread(discovery.search_ipv4, timeout=timeout)
 
                 # Clear old devices
@@ -125,6 +126,9 @@ class DeviceManager:
                         f"Discovered: {device_info.name} ({device_info.type}) "
                         f"at {device_info.host}:{device_info.port}"
                     )
+
+                # Check known devices that don't implement UDP discovery
+                await self._check_known_devices(found_devices)
 
                 logger.info(f"Discovery complete: found {len(found_devices)} devices")
                 if not found_devices:
@@ -249,6 +253,50 @@ class DeviceManager:
         device = self._connected_devices[device_id]
         device.update_last_used()
         return device
+
+    async def _check_known_devices(self, found_devices: list[DeviceInfo]) -> None:
+        """
+        Check known devices that don't implement UDP discovery.
+        
+        Queries the management API of each known device to discover
+        configured devices.
+        """
+        for host, port, name in config.known_devices:
+            logger.info(f"Checking known device: {name} at {host}:{port}")
+            
+            try:
+                # Query management API
+                url = f"http://{host}:{port}/management/v1/configureddevices"
+                async with self._session.get(url, timeout=2.0) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        devices = data.get('Value', [])
+                        
+                        for device_data in devices:
+                            # Add host and port to device data
+                            device_data['Host'] = host
+                            device_data['Port'] = port
+                            
+                            # Create DeviceInfo
+                            device_info = DeviceInfo(device_data)
+                            
+                            # Check if not already discovered
+                            if device_info.id not in self._available_devices:
+                                self._available_devices[device_info.id] = device_info
+                                found_devices.append(device_info)
+                                logger.info(
+                                    f"Added known device: {device_info.name} "
+                                    f"({device_info.type}) from {name}"
+                                )
+                    else:
+                        logger.warning(
+                            f"Known device {name} returned status {response.status}"
+                        )
+                        
+            except asyncio.TimeoutError:
+                logger.warning(f"Known device {name} at {host}:{port} timed out")
+            except Exception as e:
+                logger.warning(f"Error checking known device {name}: {e}")
 
     async def get_device_info(self, device_id: str) -> dict[str, Any]:
         """Get detailed information about a device."""

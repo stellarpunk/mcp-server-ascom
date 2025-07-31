@@ -322,3 +322,52 @@ class TelescopeTools(BaseDeviceTools):
                 'error': str(e),
                 'message': "Failed to park telescope"
             }
+    
+    async def custom_action(
+        self, 
+        device_id: str, 
+        action: str, 
+        parameters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Execute custom ASCOM action on telescope."""
+        try:
+            # Get telescope
+            connected = self.device_manager.get_connected_device(device_id)
+            telescope = connected.client
+            
+            logger.info(f"Executing custom action: {action}")
+            
+            # Convert parameters to JSON string for ASCOM
+            if parameters:
+                import json
+                param_str = json.dumps(parameters)
+            else:
+                param_str = ""
+            
+            # Execute action
+            result = telescope.Action(action, param_str)
+            
+            # Try to parse result as JSON
+            try:
+                import json
+                if isinstance(result, str) and result.strip():
+                    result = json.loads(result)
+            except:
+                # If not JSON, return as string
+                pass
+            
+            return {
+                'success': True,
+                'action': action,
+                'result': result,
+                'message': f"Action '{action}' completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Custom action failed: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'action': action,
+                'message': f"Failed to execute action '{action}'"
+            }

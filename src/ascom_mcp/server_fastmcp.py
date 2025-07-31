@@ -63,6 +63,24 @@ async def server_lifespan(server: FastMCP):
         logger.info("Server shutdown complete")
 
 
+async def ensure_initialized():
+    """Ensure all global tools are initialized."""
+    global device_manager, discovery_tools, telescope_tools, camera_tools
+    
+    if device_manager is None:
+        device_manager = DeviceManager()
+        await device_manager.initialize()
+    
+    if discovery_tools is None:
+        discovery_tools = DiscoveryTools(device_manager)
+    
+    if telescope_tools is None:
+        telescope_tools = TelescopeTools(device_manager)
+        
+    if camera_tools is None:
+        camera_tools = CameraTools(device_manager)
+
+
 # Discovery tools
 @mcp.tool()
 async def discover_ascom_devices(timeout: float = 5.0) -> dict[str, Any]:
@@ -74,6 +92,8 @@ async def discover_ascom_devices(timeout: float = 5.0) -> dict[str, Any]:
     Returns:
         Dictionary with discovered devices
     """
+    await ensure_initialized()
+    
     logger.debug("tool_called", tool="discover_ascom_devices", timeout=timeout)
     result = await discovery_tools.discover_devices(timeout=timeout)
     logger.info("devices_discovered", count=result.get("count", 0))
@@ -90,6 +110,7 @@ async def get_device_info(device_id: str) -> dict[str, Any]:
     Returns:
         Device information dictionary
     """
+    await ensure_initialized()
     return await discovery_tools.get_device_info(device_id=device_id)
 
 
@@ -104,6 +125,7 @@ async def telescope_connect(device_id: str) -> dict[str, Any]:
     Returns:
         Connection status dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.connect(device_id=device_id)
 
 
@@ -117,6 +139,7 @@ async def telescope_disconnect(device_id: str) -> dict[str, Any]:
     Returns:
         Disconnection status dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.disconnect(device_id=device_id)
 
 
@@ -132,6 +155,7 @@ async def telescope_goto(device_id: str, ra: float, dec: float) -> dict[str, Any
     Returns:
         Slew status dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.goto(
         device_id=device_id,
         ra=ra,
@@ -150,6 +174,7 @@ async def telescope_goto_object(device_id: str, object_name: str) -> dict[str, A
     Returns:
         Slew status dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.goto_object(
         device_id=device_id,
         object_name=object_name
@@ -166,6 +191,7 @@ async def telescope_get_position(device_id: str) -> dict[str, Any]:
     Returns:
         Position information dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.get_position(device_id=device_id)
 
 
@@ -179,7 +205,42 @@ async def telescope_park(device_id: str) -> dict[str, Any]:
     Returns:
         Park status dictionary
     """
+    await ensure_initialized()
     return await telescope_tools.park(device_id=device_id)
+
+
+@mcp.tool()
+async def telescope_custom_action(
+    device_id: str, 
+    action: str, 
+    parameters: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Execute custom ASCOM action (e.g., Seestar-specific commands).
+    
+    Args:
+        device_id: Connected telescope device ID
+        action: Action name (e.g., 'method_sync', 'goto_preset')
+        parameters: Action parameters (varies by action)
+        
+    Returns:
+        Action result dictionary
+        
+    Examples:
+        # Seestar focus control
+        telescope_custom_action(device_id, "method_sync", 
+            {"method": "get_focuser_position"})
+        
+        # Seestar movement
+        telescope_custom_action(device_id, "method_sync",
+            {"method": "scope_speed_move", 
+             "params": {"speed": 300, "angle": 90, "dur_sec": 3}})
+    """
+    await ensure_initialized()
+    return await telescope_tools.custom_action(
+        device_id=device_id,
+        action=action,
+        parameters=parameters
+    )
 
 
 # Camera tools
@@ -193,6 +254,7 @@ async def camera_connect(device_id: str) -> dict[str, Any]:
     Returns:
         Connection status dictionary
     """
+    await ensure_initialized()
     return await camera_tools.connect(device_id=device_id)
 
 
@@ -212,6 +274,7 @@ async def camera_capture(
     Returns:
         Capture result dictionary
     """
+    await ensure_initialized()
     return await camera_tools.capture(
         device_id=device_id,
         exposure_seconds=exposure_seconds,
@@ -229,6 +292,7 @@ async def camera_get_status(device_id: str) -> dict[str, Any]:
     Returns:
         Camera status dictionary
     """
+    await ensure_initialized()
     return await camera_tools.get_status(device_id=device_id)
 
 

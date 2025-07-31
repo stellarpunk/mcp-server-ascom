@@ -157,15 +157,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Security
 
-Off by default. Enable OAuth:
+**Secure by Design** - Local connections only by default.
+
+### Advanced Security (OAuth)
+For production deployments with remote access:
 
 ```bash
 cp .env.example .env
 # Edit .env: ASCOM_MCP_OAUTH_ENABLED=true
+# Configure OAuth provider settings
 # Restart server
 ```
 
-Done. See [security.py](src/ascom_mcp/security.py) for options.
+See [security.py](src/ascom_mcp/security.py) for configuration options.
 
 ## Troubleshooting
 
