@@ -37,7 +37,7 @@ run_test() {
 # 1. Test Python module can be imported
 echo -e "\n${YELLOW}1. Module Import Tests${NC}"
 run_test "Import main module" "python -c 'import ascom_mcp'"
-run_test "Import server module" "python -c 'from ascom_mcp.server import create_server, run'"
+run_test "Import server module" "python -c 'from ascom_mcp.server_fastmcp import create_server, run'"
 run_test "Check version" "python -c 'import ascom_mcp; print(ascom_mcp.__version__)'"
 
 # 2. Test CLI entry points

@@ -24,7 +24,7 @@ class TestCLIEntry:
         stdout, stderr = proc.communicate(timeout=5)
         
         assert proc.returncode == 0
-        assert "0.2" in stdout  # Version check
+        assert "0.3" in stdout  # Version check
         assert not stderr  # No errors
     
     def test_script_entry_point(self):
@@ -32,7 +32,7 @@ class TestCLIEntry:
         # This simulates what happens when installed via pip/uvx
         proc = subprocess.Popen(
             [sys.executable, "-c", 
-             "from ascom_mcp.server import run; print('Entry point OK')"],
+             "from ascom_mcp.server_fastmcp import run; print('Entry point OK')"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True

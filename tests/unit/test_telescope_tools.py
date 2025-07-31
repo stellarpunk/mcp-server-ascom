@@ -24,7 +24,7 @@ class TestTelescopeTools:
         mock_manager.connect_device.return_value = connected
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.connect("telescope_0")
+        result = await tools.connect("Telescope_0")
 
         assert result["success"] is True
         assert result["telescope"]["connected"] is True
@@ -44,11 +44,11 @@ class TestTelescopeTools:
         mock_telescope.AtPark = False
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.disconnect("telescope_0")
+        result = await tools.disconnect("Telescope_0")
 
         assert result["success"] is True
         mock_telescope.Park.assert_called_once()
-        mock_manager.disconnect_device.assert_called_once_with("telescope_0")
+        mock_manager.disconnect_device.assert_called_once_with("Telescope_0")
 
     @pytest.mark.asyncio
     async def test_goto_valid_coordinates(self, mock_telescope):
@@ -62,7 +62,7 @@ class TestTelescopeTools:
         mock_telescope.Slewing = False
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.goto("telescope_0", ra=12.5, dec=45.0)
+        result = await tools.goto("Telescope_0", ra=12.5, dec=45.0)
 
         assert result["success"] is True
         assert result["status"]["target_ra"] == 12.5
@@ -76,7 +76,7 @@ class TestTelescopeTools:
         tools = TelescopeTools(mock_manager)
 
         # RA out of range
-        result = await tools.goto("telescope_0", ra=25.0, dec=0.0)
+        result = await tools.goto("Telescope_0", ra=25.0, dec=0.0)
 
         assert result["success"] is False
         assert "RA must be between 0 and 24" in result["error"]
@@ -88,7 +88,7 @@ class TestTelescopeTools:
         tools = TelescopeTools(mock_manager)
 
         # Dec out of range
-        result = await tools.goto("telescope_0", ra=12.0, dec=-95.0)
+        result = await tools.goto("Telescope_0", ra=12.0, dec=-95.0)
 
         assert result["success"] is False
         assert "Dec must be between -90 and +90" in result["error"]
@@ -104,7 +104,7 @@ class TestTelescopeTools:
         mock_telescope.Slewing = True
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.goto("telescope_0", ra=12.0, dec=45.0)
+        result = await tools.goto("Telescope_0", ra=12.0, dec=45.0)
 
         assert result["success"] is False
         assert "already slewing" in result["error"]
@@ -131,7 +131,7 @@ class TestTelescopeTools:
             mock_coord.dec.to_string.return_value = "-5:27:00"
             mock_skycoord.from_name.return_value = mock_coord
 
-            result = await tools.goto_object("telescope_0", "M42")
+            result = await tools.goto_object("Telescope_0", "M42")
 
             assert result["success"] is True
             assert "M42" in result["message"]
@@ -154,7 +154,7 @@ class TestTelescopeTools:
         tools = TelescopeTools(mock_manager)
 
         with patch("ascom_mcp.tools.telescope.SkyCoord"):
-            result = await tools.get_position("telescope_0")
+            result = await tools.get_position("Telescope_0")
 
             assert result["success"] is True
             assert result["position"]["ra_hours"] == 12.345
@@ -174,7 +174,7 @@ class TestTelescopeTools:
         mock_telescope.AtPark = False
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.park("telescope_0")
+        result = await tools.park("Telescope_0")
 
         assert result["success"] is True
         mock_telescope.Park.assert_called_once()
@@ -192,7 +192,7 @@ class TestTelescopeTools:
         mock_telescope.AtPark = True
 
         tools = TelescopeTools(mock_manager)
-        result = await tools.park("telescope_0")
+        result = await tools.park("Telescope_0")
 
         assert result["success"] is True
         assert "already parked" in result["message"]

@@ -112,7 +112,7 @@ class TestMCPProtocol:
         await mcp_server.device_manager.discover_devices()
 
         # 2. Connect to telescope
-        request = call_tool_request("telescope_connect", {"device_id": "telescope_0"})
+        request = call_tool_request("telescope_connect", {"device_id": "Telescope_0"})
         result = await mcp_server.handle_call_tool(request)
 
         response = json.loads(result.content[0].text)
@@ -120,7 +120,7 @@ class TestMCPProtocol:
         assert response["telescope"]["connected"] is True
 
         # 3. Get position
-        request = call_tool_request("telescope_get_position", {"device_id": "telescope_0"})
+        request = call_tool_request("telescope_get_position", {"device_id": "Telescope_0"})
         result = await mcp_server.handle_call_tool(request)
 
         response = json.loads(result.content[0].text)
@@ -159,10 +159,10 @@ class TestMCPProtocol:
 
         tasks = [
             mcp_server.handle_call_tool(
-                call_tool_request("telescope_connect", {"device_id": "telescope_0"})
+                call_tool_request("telescope_connect", {"device_id": "Telescope_0"})
             ),
             mcp_server.handle_call_tool(
-                call_tool_request("camera_connect", {"device_id": "camera_0"})
+                call_tool_request("camera_connect", {"device_id": "Camera_0"})
             )
         ]
 

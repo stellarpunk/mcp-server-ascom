@@ -72,7 +72,7 @@ class TestDiscoveryTools:
         """Test getting telescope device info."""
         mock_manager = AsyncMock()
         mock_info = {
-            "id": "telescope_0",
+            "id": "Telescope_0",
             "type": "telescope",
             "name": "Test Telescope",
             "connected": True,
@@ -81,7 +81,7 @@ class TestDiscoveryTools:
         mock_manager.get_device_info.return_value = mock_info
 
         tools = DiscoveryTools(mock_manager)
-        result = await tools.get_device_info("telescope_0")
+        result = await tools.get_device_info("Telescope_0")
 
         assert result["success"] is True
         assert result["device"]["type"] == "telescope"
@@ -94,14 +94,14 @@ class TestDiscoveryTools:
         """Test getting camera device info."""
         mock_manager = AsyncMock()
         mock_info = {
-            "id": "camera_0",
+            "id": "Camera_0",
             "type": "camera",
             "name": "Test Camera"
         }
         mock_manager.get_device_info.return_value = mock_info
 
         tools = DiscoveryTools(mock_manager)
-        result = await tools.get_device_info("camera_0")
+        result = await tools.get_device_info("Camera_0")
 
         assert result["success"] is True
         assert "capture" in result["device"]["capabilities"]

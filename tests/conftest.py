@@ -135,30 +135,33 @@ async def mock_device_manager(mock_telescope, mock_camera):
 @pytest.fixture
 async def mcp_server(mock_device_manager):
     """Create MCP server with mocked devices."""
-    from ascom_mcp.server import AscomMCPServer
-
-    server = AscomMCPServer()
-
-    # Replace device manager with mock
-    server.device_manager = mock_device_manager
-
-    # Initialize tools
+    from ascom_mcp.server_fastmcp import mcp, server_lifespan
     from ascom_mcp.tools.camera import CameraTools
     from ascom_mcp.tools.discovery import DiscoveryTools
     from ascom_mcp.tools.telescope import TelescopeTools
+    
+    # Replace device manager with mock
+    from ascom_mcp import devices
+    devices.manager._instance = mock_device_manager
 
-    server.discovery_tools = DiscoveryTools(mock_device_manager)
-    server.telescope_tools = TelescopeTools(mock_device_manager)
-    server.camera_tools = CameraTools(mock_device_manager)
+    # Initialize tools
+    discovery_tools = DiscoveryTools(mock_device_manager)
+    telescope_tools = TelescopeTools(mock_device_manager)
+    camera_tools = CameraTools(mock_device_manager)
+    
+    # Store tools for access in tests
+    mcp._discovery_tools = discovery_tools
+    mcp._telescope_tools = telescope_tools
+    mcp._camera_tools = camera_tools
 
-    return server
+    return mcp
 
 
 @pytest.fixture
 def initialize_request():
     """Create initialize request."""
     return InitializeRequest(
-        protocolVersion="2024-11-05",
+        protocolVersion="2025-06-18",
         capabilities={},
         clientInfo={"name": "test-client", "version": "1.0"}
     )

@@ -25,7 +25,7 @@ class TestCameraTools:
         mock_manager.connect_device.return_value = connected
 
         tools = CameraTools(mock_manager)
-        result = await tools.connect("camera_0")
+        result = await tools.connect("Camera_0")
 
         assert result["success"] is True
         assert result["camera"]["connected"] is True
@@ -38,7 +38,7 @@ class TestCameraTools:
         mock_manager = AsyncMock()
         tools = CameraTools(mock_manager)
 
-        result = await tools.capture("camera_0", exposure_seconds=-1)
+        result = await tools.capture("Camera_0", exposure_seconds=-1)
 
         assert result["success"] is False
         assert "must be positive" in result["error"]
@@ -54,7 +54,7 @@ class TestCameraTools:
         mock_camera.CameraState = 2  # exposing
 
         tools = CameraTools(mock_manager)
-        result = await tools.capture("camera_0", exposure_seconds=10)
+        result = await tools.capture("Camera_0", exposure_seconds=10)
 
         assert result["success"] is False
         assert "Camera is busy" in result["error"]
@@ -79,7 +79,7 @@ class TestCameraTools:
 
         # Start capture and simulation concurrently
         capture_task = asyncio.create_task(
-            tools.capture("camera_0", exposure_seconds=0.5)
+            tools.capture("Camera_0", exposure_seconds=0.5)
         )
         sim_task = asyncio.create_task(simulate_exposure())
 
@@ -103,7 +103,7 @@ class TestCameraTools:
         mock_camera.CoolerPower = 75.5
 
         tools = CameraTools(mock_manager)
-        result = await tools.get_status("camera_0")
+        result = await tools.get_status("Camera_0")
 
         assert result["success"] is True
         assert result["status"]["state"] == "idle"

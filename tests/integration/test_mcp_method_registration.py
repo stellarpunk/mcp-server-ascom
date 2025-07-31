@@ -15,7 +15,8 @@ def test_mcp_methods_registered():
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=False
+        text=False,
+        env={**subprocess.os.environ, "LOG_LEVEL": "ERROR"}  # Reduce noise
     )
     
     try:
