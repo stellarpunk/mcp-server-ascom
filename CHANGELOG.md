@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.3.0] - 2025-01-30
+
+FastMCP. Structured logging. Half the code.
+
+### Changed
+- Migrated to FastMCP from low-level Server API
+- Default entry point uses FastMCP implementation
+- Reduced codebase: 600 → 300 lines
+
+### Added
+- Structured JSON logging to stderr
+- OpenTelemetry-compatible log format
+- Comprehensive test script: test_v030.py
+
+### Fixed
+- "Method not found" errors in Claude Desktop
+- Decorator return type mismatches
+- Protocol compliance issues
+
+### Migration
+From v0.2.x: No API changes. Internal improvements only.
+
+Key files changed:
+- `server.py` → `server_fastmcp.py` (new implementation)
+- `__main__.py` (imports FastMCP version)
+- `logging.py` (new structured logger)
+
+## [0.2.6] - 2025-01-30
+
+### Fixed
+- Decorator functions return lists, not Result objects
+- UV cache issues with local development
+
+## [0.2.5] - 2025-01-30
+
+### Fixed
+- Added missing method registration in __init__
+- Integration tests verify all MCP methods
+
+## [0.2.4] - 2025-01-30
+
+### Fixed
+- tools/list and resources/list registration
+- Claude Desktop compatibility
+
+## [0.2.3] - 2025-01-29
+
+### Added
+- Initial PyPI release
+- Full MCP protocol support
+
 ## [0.2.2] - 2025-07-30
 
 ### Fixed

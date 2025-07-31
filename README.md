@@ -8,15 +8,22 @@
 
 Control astronomy equipment through AI. MCP 2025-06-18 compliant.
 
+## What's New in v0.3.0
+
+- **FastMCP** - Uses official SDK. Half the code. Same functionality.
+- **Structured Logging** - JSON to stderr. OpenTelemetry compatible.
+- **Better Errors** - FastMCP validates protocol compliance automatically.
+
 ## Features
 
-- **Latest Protocol** - Structured outputs. Version negotiation.
+- **FastMCP** - Production-ready. Clean API.
+- **Observable** - JSON logs. Grafana-ready.
 - **Any ASCOM Device** - Telescopes. Cameras. Focusers. More.
-- **Natural Language** - "Point at M31" just works.
-- **Auto-Discovery** - Finds devices. No configuration.
-- **Fast** - Async everywhere. Never blocks.
+- **Natural Language** - "Point at M31" works.
+- **Auto-Discovery** - Zero configuration.
+- **Fast** - Async. Never blocks.
 - **Secure** - OAuth ready. Off by default.
-- **Extensible** - Add new device types easily.
+- **Extensible** - Add device types easily.
 - **Tested** - Full coverage. Type safe.
 
 ## Installation
