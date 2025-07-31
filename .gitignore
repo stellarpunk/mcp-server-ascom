@@ -92,6 +92,9 @@ cython_debug/
 device_cache.json
 connection_state.json
 
+# Internal documentation (not for public)
+docs/
+
 # MCP specific
 .mcp.json
 .mcp.json.disabled
