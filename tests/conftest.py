@@ -1,10 +1,13 @@
 """Pytest configuration and fixtures."""
 
 import asyncio
+import uuid
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
+import structlog
+from fastmcp import Context
 from mcp.types import CallToolRequest, InitializeRequest, ListToolsRequest
 
 
@@ -208,3 +211,86 @@ def call_tool_request():
         return CallToolRequest(name=tool_name, arguments=arguments)
 
     return _make_request
+
+
+@pytest.fixture
+def mock_context():
+    """Mock FastMCP Context for testing."""
+    ctx = MagicMock(spec=Context)
+    ctx.logger = structlog.get_logger()
+    ctx.request_id = str(uuid.uuid4())
+    
+    # Add any additional context attributes needed for tests
+    ctx.meta = {}
+    ctx.session_id = str(uuid.uuid4())
+    
+    return ctx
+
+
+@pytest.fixture
+def mock_simulator_device():
+    """Mock simulator device info."""
+    return {
+        "DeviceName": "seestar_simulator (Simulator)",
+        "DeviceType": "Telescope", 
+        "DeviceNumber": 99,
+        "UniqueID": "simulator_localhost_4700",
+        "Host": "localhost",
+        "Port": 4700,
+        "ApiVersion": 1,
+        "IsSimulator": True
+    }
+
+
+@pytest.fixture
+async def device_manager_with_simulator(mock_telescope):
+    """Create device manager configured for simulator."""
+    from ascom_mcp.devices.manager import DeviceManager, DeviceInfo
+    
+    # Set environment for simulator
+    import os
+    os.environ["ASCOM_SIMULATOR_DEVICES"] = "localhost:4700:seestar_simulator"
+    
+    manager = DeviceManager()
+    manager._session = MagicMock()
+    
+    # Mock discovery to include simulator
+    async def mock_discover(timeout=5.0):
+        devices = [
+            DeviceInfo({
+                "DeviceType": "Telescope",
+                "DeviceNumber": 99,
+                "DeviceName": "seestar_simulator (Simulator)",
+                "Host": "localhost",
+                "Port": 4700,
+                "ApiVersion": 1
+            })
+        ]
+        manager._available_devices = {d.id: d for d in devices}
+        return devices
+    
+    manager.discover_devices = mock_discover
+    
+    # Mock alpaca constructor for simulator
+    from unittest.mock import patch
+    
+    # We'll patch alpyca at the module level when needed
+    await manager.initialize()
+    return manager
+
+
+@pytest.fixture  
+def simulator_environment():
+    """Set up environment for simulator testing."""
+    import os
+    old_env = os.environ.copy()
+    
+    # Set simulator configuration
+    os.environ["ASCOM_SIMULATOR_DEVICES"] = "localhost:4700:seestar_simulator"
+    os.environ["ASCOM_KNOWN_DEVICES"] = "localhost:5555:seestar_alp"
+    
+    yield
+    
+    # Restore environment
+    os.environ.clear()
+    os.environ.update(old_env)

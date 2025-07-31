@@ -1,0 +1,40 @@
+# Multitail configuration for monitoring ASCOM MCP + Seestar ALP
+
+# Color scheme definitions
+colorscheme:ascom
+# Errors in red
+cs_re:red:.*[Ee]rror.*
+cs_re:red:.*[Ff]ailed.*
+cs_re:red:.*[Ee]xception.*
+
+# Warnings in yellow  
+cs_re:yellow:.*[Ww]arning.*
+cs_re:yellow:.*[Ww]arn.*
+
+# Success/Connect in green
+cs_re:green:.*[Cc]onnected.*
+cs_re:green:.*[Ss]uccess.*
+cs_re:green:.*[Cc]omplete.*
+
+# Info in cyan
+cs_re:cyan:.*INFO.*
+cs_re:cyan:.*telescope_.*
+cs_re:cyan:.*camera_.*
+
+# Debug in magenta
+cs_re:magenta:.*DEBUG.*
+
+# Telescope operations in blue
+cs_re:blue:.*slew.*
+cs_re:blue:.*park.*
+cs_re:blue:.*goto.*
+cs_re:blue:.*position.*
+
+# Color scheme for Seestar ALP
+colorscheme:seestar
+cs_re:red:.*ERROR.*
+cs_re:yellow:.*WARNING.*
+cs_re:green:.*Connected.*
+cs_re:cyan:.*GoTo.*
+cs_re:blue:.*Stellarium.*
+cs_re:magenta:.*simulator.*

@@ -12,10 +12,12 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
+from fastmcp.exceptions import ToolError
 
 from . import __version__
 from .ascom_logging import StructuredLogger
+from .config import config
 from .devices.manager import DeviceManager
 from .tools.camera import CameraTools
 from .tools.discovery import DiscoveryTools
@@ -82,10 +84,11 @@ async def ensure_initialized():
 
 # Discovery tools
 @mcp.tool()
-async def discover_ascom_devices(timeout: float = 5.0) -> dict[str, Any]:
+async def discover_ascom_devices(ctx: Context, timeout: float = 5.0) -> dict[str, Any]:
     """Discover ASCOM devices on the network.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         timeout: Discovery timeout in seconds (default: 5.0)
 
     Returns:
@@ -93,60 +96,105 @@ async def discover_ascom_devices(timeout: float = 5.0) -> dict[str, Any]:
     """
     await ensure_initialized()
 
-    logger.debug("tool_called", tool="discover_ascom_devices", timeout=timeout)
-    result = await discovery_tools.discover_devices(timeout=timeout)
-    logger.info("devices_discovered", count=result.get("count", 0))
-    return result
+    ctx.logger.debug("tool_called", tool="discover_ascom_devices", timeout=timeout)
+    try:
+        result = await discovery_tools.discover_devices(timeout=timeout)
+        ctx.logger.info("devices_discovered", count=result.get("count", 0))
+        return result
+    except Exception as e:
+        ctx.logger.error("discovery_failed", error=str(e))
+        raise ToolError(
+            f"Device discovery failed: {str(e)}",
+            code="discovery_failed",
+            recoverable=True,
+            details={"suggestions": ["Check network connectivity", "Ensure devices are powered on"]}
+        )
 
 
 @mcp.tool()
-async def get_device_info(device_id: str) -> dict[str, Any]:
+async def get_device_info(ctx: Context, device_id: str) -> dict[str, Any]:
     """Get detailed information about a specific ASCOM device.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Device ID from discovery
 
     Returns:
         Device information dictionary
     """
     await ensure_initialized()
-    return await discovery_tools.get_device_info(device_id=device_id)
+    ctx.logger.info("getting_device_info", device_id=device_id)
+    try:
+        return await discovery_tools.get_device_info(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("device_info_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot get info for device '{device_id}': {str(e)}",
+            code="device_not_found",
+            recoverable=True
+        )
 
 
 # Telescope tools
 @mcp.tool()
-async def telescope_connect(device_id: str) -> dict[str, Any]:
+async def telescope_connect(ctx: Context, device_id: str) -> dict[str, Any]:
     """Connect to an ASCOM telescope.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Device ID from discovery
 
     Returns:
         Connection status dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.connect(device_id=device_id)
+    ctx.logger.info("connecting_telescope", device_id=device_id)
+    try:
+        return await telescope_tools.connect(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("telescope_connect_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot connect to telescope '{device_id}': {str(e)}",
+            code="connection_failed",
+            recoverable=True,
+            details={"suggestions": [
+                "Check if seestar_alp is running (python root_app.py)",
+                "Try using simulator mode",
+                "Verify device ID from discovery"
+            ]}
+        )
 
 
 @mcp.tool()
-async def telescope_disconnect(device_id: str) -> dict[str, Any]:
+async def telescope_disconnect(ctx: Context, device_id: str) -> dict[str, Any]:
     """Disconnect from an ASCOM telescope.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
 
     Returns:
         Disconnection status dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.disconnect(device_id=device_id)
+    ctx.logger.info("disconnecting_telescope", device_id=device_id)
+    try:
+        return await telescope_tools.disconnect(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("telescope_disconnect_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot disconnect telescope '{device_id}': {str(e)}",
+            code="disconnect_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
-async def telescope_goto(device_id: str, ra: float, dec: float) -> dict[str, Any]:
+async def telescope_goto(ctx: Context, device_id: str, ra: float, dec: float) -> dict[str, Any]:
     """Slew telescope to specific coordinates.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
         ra: Right Ascension in hours (0-24)
         dec: Declination in degrees (-90 to +90)
@@ -155,14 +203,24 @@ async def telescope_goto(device_id: str, ra: float, dec: float) -> dict[str, Any
         Slew status dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.goto(device_id=device_id, ra=ra, dec=dec)
+    ctx.logger.info("telescope_goto", device_id=device_id, ra=ra, dec=dec)
+    try:
+        return await telescope_tools.goto(device_id=device_id, ra=ra, dec=dec)
+    except Exception as e:
+        ctx.logger.error("telescope_goto_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot slew telescope: {str(e)}",
+            code="slew_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
-async def telescope_goto_object(device_id: str, object_name: str) -> dict[str, Any]:
+async def telescope_goto_object(ctx: Context, device_id: str, object_name: str) -> dict[str, Any]:
     """Slew telescope to a named celestial object.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
         object_name: Name of celestial object (e.g., 'M31', 'Orion Nebula')
 
@@ -170,46 +228,77 @@ async def telescope_goto_object(device_id: str, object_name: str) -> dict[str, A
         Slew status dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.goto_object(
-        device_id=device_id, object_name=object_name
-    )
+    ctx.logger.info("telescope_goto_object", device_id=device_id, object=object_name)
+    try:
+        return await telescope_tools.goto_object(
+            device_id=device_id, object_name=object_name
+        )
+    except Exception as e:
+        ctx.logger.error("telescope_goto_object_failed", device_id=device_id, object=object_name, error=str(e))
+        raise ToolError(
+            f"Cannot slew to object '{object_name}': {str(e)}",
+            code="object_lookup_failed",
+            recoverable=True,
+            details={"suggestions": ["Check object name spelling", "Try catalog designation (e.g., M31, NGC 224)"]}
+        )
 
 
 @mcp.tool()
-async def telescope_get_position(device_id: str) -> dict[str, Any]:
+async def telescope_get_position(ctx: Context, device_id: str) -> dict[str, Any]:
     """Get current telescope position.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
 
     Returns:
         Position information dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.get_position(device_id=device_id)
+    ctx.logger.debug("getting_telescope_position", device_id=device_id)
+    try:
+        return await telescope_tools.get_position(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("get_position_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot get telescope position: {str(e)}",
+            code="position_read_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
-async def telescope_park(device_id: str) -> dict[str, Any]:
+async def telescope_park(ctx: Context, device_id: str) -> dict[str, Any]:
     """Park telescope at home position.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
 
     Returns:
         Park status dictionary
     """
     await ensure_initialized()
-    return await telescope_tools.park(device_id=device_id)
+    ctx.logger.info("parking_telescope", device_id=device_id)
+    try:
+        return await telescope_tools.park(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("telescope_park_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot park telescope: {str(e)}",
+            code="park_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
 async def telescope_custom_action(
-    device_id: str, action: str, parameters: dict[str, Any] | None = None
+    ctx: Context, device_id: str, action: str, parameters: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """Execute custom ASCOM action (e.g., Seestar-specific commands).
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
         action: Action name (e.g., 'method_sync', 'goto_preset')
         parameters: Action parameters (varies by action)
@@ -228,33 +317,53 @@ async def telescope_custom_action(
              "params": {"speed": 300, "angle": 90, "dur_sec": 3}})
     """
     await ensure_initialized()
-    return await telescope_tools.custom_action(
-        device_id=device_id, action=action, parameters=parameters
-    )
+    ctx.logger.info("telescope_custom_action", device_id=device_id, action=action)
+    try:
+        return await telescope_tools.custom_action(
+            device_id=device_id, action=action, parameters=parameters
+        )
+    except Exception as e:
+        ctx.logger.error("custom_action_failed", device_id=device_id, action=action, error=str(e))
+        raise ToolError(
+            f"Custom action '{action}' failed: {str(e)}",
+            code="custom_action_failed",
+            recoverable=True
+        )
 
 
 # Camera tools
 @mcp.tool()
-async def camera_connect(device_id: str) -> dict[str, Any]:
+async def camera_connect(ctx: Context, device_id: str) -> dict[str, Any]:
     """Connect to an ASCOM camera.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Device ID from discovery
 
     Returns:
         Connection status dictionary
     """
     await ensure_initialized()
-    return await camera_tools.connect(device_id=device_id)
+    ctx.logger.info("connecting_camera", device_id=device_id)
+    try:
+        return await camera_tools.connect(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("camera_connect_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot connect to camera '{device_id}': {str(e)}",
+            code="connection_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
 async def camera_capture(
-    device_id: str, exposure_seconds: float, light_frame: bool = True
+    ctx: Context, device_id: str, exposure_seconds: float, light_frame: bool = True
 ) -> dict[str, Any]:
     """Capture an image with the camera.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected camera device ID
         exposure_seconds: Exposure time in seconds
         light_frame: True for light frame, False for dark (default: True)
@@ -263,26 +372,67 @@ async def camera_capture(
         Capture result dictionary
     """
     await ensure_initialized()
-    return await camera_tools.capture(
-        device_id=device_id, exposure_seconds=exposure_seconds, light_frame=light_frame
-    )
+    ctx.logger.info("camera_capture", device_id=device_id, exposure=exposure_seconds, light_frame=light_frame)
+    try:
+        return await camera_tools.capture(
+            device_id=device_id, exposure_seconds=exposure_seconds, light_frame=light_frame
+        )
+    except Exception as e:
+        ctx.logger.error("camera_capture_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Camera capture failed: {str(e)}",
+            code="capture_failed",
+            recoverable=True
+        )
 
 
 @mcp.tool()
-async def camera_get_status(device_id: str) -> dict[str, Any]:
+async def camera_get_status(ctx: Context, device_id: str) -> dict[str, Any]:
     """Get current camera status.
 
     Args:
+        ctx: FastMCP context for logging and request metadata
         device_id: Connected camera device ID
 
     Returns:
         Camera status dictionary
     """
     await ensure_initialized()
-    return await camera_tools.get_status(device_id=device_id)
+    ctx.logger.debug("getting_camera_status", device_id=device_id)
+    try:
+        return await camera_tools.get_status(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("camera_status_failed", device_id=device_id, error=str(e))
+        raise ToolError(
+            f"Cannot get camera status: {str(e)}",
+            code="status_read_failed",
+            recoverable=True
+        )
 
 
 # Resources
+@mcp.resource("ascom://health")
+async def health_check() -> str:
+    """Health check endpoint with device and simulator status."""
+    await ensure_initialized()
+    
+    health_data = {
+        "status": "healthy",
+        "version": __version__,
+        "server": "ASCOM MCP Server",
+        "implementation": "FastMCP 2.0",
+        "devices": {
+            "available": len(device_manager._available_devices) if device_manager else 0,
+            "connected": len(device_manager._connected_devices) if device_manager else 0,
+        },
+        "known_devices": [
+            {"host": host, "port": port, "name": name} 
+            for host, port, name in config.known_devices
+        ],
+        "simulator_status": "Check ASCOM_SIMULATOR_DEVICES env var for simulator configuration"
+    }
+    return json.dumps(health_data, indent=2)
+
 @mcp.resource("ascom://server/info")
 async def get_server_info() -> str:
     """Information about the ASCOM MCP server."""

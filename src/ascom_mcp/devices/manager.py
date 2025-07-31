@@ -15,6 +15,7 @@ from alpaca.camera import Camera
 from alpaca.filterwheel import FilterWheel
 from alpaca.focuser import Focuser
 from alpaca.telescope import Telescope
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from ..config import config
 from ..utils.errors import ConnectionError, DeviceNotFoundError
@@ -131,6 +132,9 @@ class DeviceManager:
 
                 # Check known devices that don't implement UDP discovery
                 await self._check_known_devices(found_devices)
+                
+                # Check for simulator devices
+                await self._check_simulator_devices(found_devices)
 
                 logger.info(f"Discovery complete: found {len(found_devices)} devices")
                 if not found_devices:
@@ -162,11 +166,20 @@ class DeviceManager:
             devices.append(device_dict)
         return devices
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(ConnectionError),
+        before_sleep=lambda retry_state: logger.warning(
+            f"Connection attempt {retry_state.attempt_number} failed, retrying..."
+        )
+    )
     async def connect_device(self, device_id: str) -> ConnectedDevice:
         """
-        Connect to a device by ID.
+        Connect to a device by ID with automatic retry.
 
         Creates appropriate client based on device type.
+        Retries up to 3 times with exponential backoff on connection failures.
         """
         async with self._connection_lock:
             # Check if already connected
@@ -301,6 +314,55 @@ class DeviceManager:
                 logger.warning(f"Known device {name} at {host}:{port} timed out")
             except Exception as e:
                 logger.warning(f"Error checking known device {name}: {e}")
+    
+    async def _check_simulator_devices(self, found_devices: list[DeviceInfo]) -> None:
+        """
+        Check for running simulator devices.
+        
+        Simulators may not have a full Alpaca API, so we do a simple
+        TCP connection check first.
+        """
+        for host, port, name in config.simulator_devices:
+            logger.info(f"Checking simulator: {name} at {host}:{port}")
+            
+            try:
+                # Quick TCP check to see if simulator is running
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(host, port),
+                    timeout=2.0
+                )
+                writer.close()
+                await writer.wait_closed()
+                
+                # If we can connect, add as a simulator device
+                device_data = {
+                    "DeviceType": "Telescope",
+                    "DeviceNumber": 99,  # Reserved for simulator
+                    "DeviceName": f"{name} (Simulator)",
+                    "Host": host,
+                    "Port": port,
+                    "UniqueID": f"simulator_{host}_{port}",
+                    "IsSimulator": True,
+                    "ApiVersion": 1
+                }
+                
+                device_info = DeviceInfo(device_data)
+                
+                # Check if not already discovered
+                if device_info.id not in self._available_devices:
+                    self._available_devices[device_info.id] = device_info
+                    found_devices.append(device_info)
+                    logger.info(
+                        f"Added simulator device: {device_info.name} "
+                        f"at {host}:{port}"
+                    )
+                    
+            except asyncio.TimeoutError:
+                logger.debug(f"Simulator {name} at {host}:{port} not responding")
+            except ConnectionRefusedError:
+                logger.debug(f"Simulator {name} at {host}:{port} not running")
+            except Exception as e:
+                logger.warning(f"Error checking simulator {name}: {e}")
 
     async def get_device_info(self, device_id: str) -> dict[str, Any]:
         """Get detailed information about a device."""

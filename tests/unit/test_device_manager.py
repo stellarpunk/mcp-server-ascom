@@ -58,18 +58,23 @@ class TestDeviceManager:
     @pytest.mark.asyncio
     async def test_discover_devices(self, mock_discovery_response):
         """Test device discovery."""
-        manager = DeviceManager()
-        await manager.initialize()
+        # Patch config to avoid environment devices
+        with patch("ascom_mcp.devices.manager.config") as mock_config:
+            mock_config.known_devices = []
+            mock_config.simulator_devices = []
+            
+            manager = DeviceManager()
+            await manager.initialize()
 
-        with patch("ascom_mcp.devices.manager.discovery.search_ipv4") as mock_search:
-            mock_search.return_value = mock_discovery_response
+            with patch("ascom_mcp.devices.manager.discovery.search_ipv4") as mock_search:
+                mock_search.return_value = mock_discovery_response
 
-            devices = await manager.discover_devices(timeout=2.0)
+                devices = await manager.discover_devices(timeout=2.0)
 
-            assert len(devices) == 2
-            assert devices[0].type == "Telescope"
-            assert devices[1].type == "Camera"
-            mock_search.assert_called_once_with(timeout=2.0)
+                assert len(devices) == 2
+                assert devices[0].type == "Telescope"
+                assert devices[1].type == "Camera"
+                mock_search.assert_called_once_with(timeout=2.0)
 
     @pytest.mark.asyncio
     async def test_connect_device_not_found(self):

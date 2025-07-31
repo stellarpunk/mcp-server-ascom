@@ -1,60 +1,74 @@
 # ASCOM MCP Core Implementation
 
-## 🎯 Module Overview
-Core implementation of ASCOM device bridging to MCP protocol.
+## Module Overview
+Core implementation of ASCOM device bridging to MCP protocol using FastMCP 2.0.
 
-## 🏗️ Key Components
+## Key Components
 
 ### `server_fastmcp.py`
-- FastMCP 2.0 server implementation
-- Tool registration and capabilities
-- Connection state management
+- FastMCP 2.0 server with Context pattern
+- All tools accept Context as first parameter
+- ToolError for recoverable errors
+- Structured logging to stderr
 
-### `ascom_client.py`
-- ASCOM Alpaca HTTP client
-- Device discovery (UDP port 32227)
-- Management API integration
+### `devices/manager.py`
+- Device discovery and connection management
+- Simulator auto-detection on port 4700
+- Tenacity retry logic (3 attempts)
+- DeviceInfo and ConnectedDevice classes
 
 ### `config.py`
-- Known devices configuration
-- Environment variable parsing
-- `ASCOM_KNOWN_DEVICES` format: `host:port:name`
+- Environment configuration
+- `ASCOM_KNOWN_DEVICES`: Known device list
+- `ASCOM_SIMULATOR_DEVICES`: Simulator devices
+- Format: `host:port:name`
 
-### `models.py`
-- Pydantic models for ASCOM responses
-- Type-safe device metadata
-- Validation and serialization
+### `tools/` directory
+- DiscoveryTools, TelescopeTools, CameraTools
+- Business logic separated from MCP protocol
+- Testable without MCP overhead
 
-## 🔧 Critical Functions
+## Critical Patterns
 
+### FastMCP 2.0 Tool Pattern
 ```python
-# Always ensure initialization
-async def ensure_initialized():
-    if client is None:
-        await initialize_client()
-
-# Device discovery pattern
-devices = await client.discover_devices(timeout=5.0)
-devices.extend(client._known_devices)  # Include configured devices
+@mcp.tool()
+async def telescope_connect(ctx: Context, device_id: str) -> dict[str, Any]:
+    ctx.logger.info("connecting_telescope", device_id=device_id)
+    try:
+        return await telescope_tools.connect(device_id=device_id)
+    except Exception as e:
+        ctx.logger.error("telescope_connect_failed", error=str(e))
+        raise ToolError(
+            f"Cannot connect to telescope '{device_id}': {str(e)}",
+            code="connection_failed",
+            recoverable=True
+        )
 ```
 
-## ⚡ Performance Tips
-- Cache device connections in `_connections` dict
-- Reuse HTTP session for multiple requests
-- Discovery timeout: 5 seconds default
-
-## 🐛 Common Issues
-- **NoneType errors** → Missing `ensure_initialized()`
-- **Discovery fails** → Use `ASCOM_KNOWN_DEVICES`
-- **Connection refused** → Check device is running
-
-## 🔍 Debugging
+### Device Discovery Pattern
 ```python
-# Enable debug logging
-import logging
-logging.basicConfig(level=logging.DEBUG)
+# Includes UDP broadcast, known devices, and simulators
+devices = await device_manager.discover_devices(timeout=5.0)
+```
 
-# Check initialization
-logger.debug(f"Client initialized: {client is not None}")
-logger.debug(f"Known devices: {client._known_devices}")
+## Performance
+- Connection caching in DeviceManager
+- HTTP session reuse via aiohttp
+- Retry logic with exponential backoff
+- Simulator TCP check (2s timeout)
+
+## Common Issues
+- **Wrong Python** → Use `.venv/bin/python`
+- **Import errors** → Unit tests mock alpaca/alpyca
+- **Discovery fails** → Set `ASCOM_SIMULATOR_DEVICES`
+- **Connection refused** → Start seestar_alp first
+
+## Debugging
+```bash
+# Structured logging to stderr
+LOG_LEVEL=DEBUG python -m ascom_mcp 2>&1 | jq
+
+# Monitor with multitail
+multitail -ci green mcp.log -ci yellow device.log
 ```
