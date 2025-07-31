@@ -12,8 +12,8 @@ Features:
 - Natural language astronomy targeting (e.g., "Point at M31")
 """
 
-__version__ = "0.2.4"  # Fixed MCP method registration
+__version__ = "0.3.0"  # Migrated to FastMCP for cleaner, production-ready implementation
 
-from .server import create_server
+from .server_fastmcp import create_server
 
 __all__ = ["create_server", "__version__"]

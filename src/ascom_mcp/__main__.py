@@ -1,8 +1,6 @@
 """Main entry point for the ASCOM MCP server."""
 
-import asyncio
-
-from .server import main
+from .server_fastmcp import run
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run()

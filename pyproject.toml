@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-ascom"
-version = "0.2.4"
+version = "0.3.0"
 description = "MCP server for ASCOM astronomy equipment control"
 readme = "README.md"
 license = "MIT"
@@ -42,7 +42,8 @@ dev = [
 ]
 
 [project.scripts]
-mcp-server-ascom = "ascom_mcp.server:run"
+mcp-server-ascom = "ascom_mcp.server_fastmcp:run"
+mcp-server-ascom-lowlevel = "ascom_mcp.server:run"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
