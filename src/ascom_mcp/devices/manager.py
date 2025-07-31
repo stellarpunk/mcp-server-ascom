@@ -109,8 +109,8 @@ class DeviceManager:
             logger.info(f"Starting device discovery (timeout: {timeout}s)")
 
             try:
-                # Use alpyca discovery
-                devices = discovery.search_ipv4(timeout=timeout)
+                # Use alpyca discovery - run in thread to avoid blocking
+                devices = await asyncio.to_thread(discovery.search_ipv4, timeout=timeout)
 
                 # Clear old devices
                 self._available_devices.clear()
