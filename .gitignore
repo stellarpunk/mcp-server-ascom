@@ -100,3 +100,13 @@ connection_state.json
 test_results/
 test_images/
 *.test.fits
+
+# Temporary debug files
+debug_*.py
+test_*.py
+send_init.py
+test_fastmcp_*.py
+test_stdio_*.py
+test_sse_*.py
+test_v*.py
+test_working_*.py
