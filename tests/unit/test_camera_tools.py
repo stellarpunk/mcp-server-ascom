@@ -1,7 +1,7 @@
 """Unit tests for camera tools."""
 
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,7 +15,8 @@ class TestCameraTools:
     @pytest.mark.asyncio
     async def test_connect_success(self, mock_camera):
         """Test successful camera connection."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
+        mock_manager.connect_device = AsyncMock()
         device_info = DeviceInfo({
             "DeviceType": "Camera",
             "DeviceNumber": 0,
@@ -35,7 +36,7 @@ class TestCameraTools:
     @pytest.mark.asyncio
     async def test_capture_invalid_exposure(self):
         """Test capture with invalid exposure time."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         tools = CameraTools(mock_manager)
 
         result = await tools.capture("Camera_0", exposure_seconds=-1)
@@ -46,7 +47,7 @@ class TestCameraTools:
     @pytest.mark.asyncio
     async def test_capture_camera_busy(self, mock_camera):
         """Test capture when camera is busy."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_camera)
         mock_manager.get_connected_device.return_value = connected
@@ -62,7 +63,7 @@ class TestCameraTools:
     @pytest.mark.asyncio
     async def test_capture_success(self, mock_camera):
         """Test successful image capture."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_camera)
         mock_manager.get_connected_device.return_value = connected
@@ -94,7 +95,7 @@ class TestCameraTools:
     @pytest.mark.asyncio
     async def test_get_status_with_cooler(self, mock_camera):
         """Test getting camera status with cooler info."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_camera)
         mock_manager.get_connected_device.return_value = connected

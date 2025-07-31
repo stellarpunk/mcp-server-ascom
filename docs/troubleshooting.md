@@ -1,93 +1,130 @@
-# Troubleshooting ASCOM MCP Server
+# Troubleshooting
 
-Quick fixes for common issues.
+## Common Issues
 
-## Claude Desktop Shows "Disabled"
+### Claude Desktop Shows "Disabled"
 
-**Symptom**: ASCOM MCP appears but shows as disabled in Claude Desktop.
+Server not starting properly.
 
-**Cause**: Server not responding to MCP protocol requests.
-
-**Fix**: Update to v0.2.4+:
+**Fix:**
 ```bash
 pip install --upgrade mcp-server-ascom
-# Clear cache
 uv cache clean
 # Restart Claude Desktop
 ```
 
-## "Method not found" Errors
+### No Devices Found
 
-**Symptom**: Logs show `{"error":{"code":-32601,"message":"Method not found"}}`.
+**Check:**
+- Device powered on
+- Same network subnet
+- Firewall allows UDP 32227
 
-**Fix**: Upgrade to v0.2.4+ which properly registers MCP handlers.
-
-## "Coroutine was never awaited"
-
-**Symptom**: Server fails with `RuntimeWarning: coroutine 'main' was never awaited`.
-
-**Fix**: Fixed in v0.2.1+. Update your package.
-
-## Server Won't Start
-
-**Check**:
-1. Python 3.10+ installed
-2. Virtual environment active
-3. Dependencies installed: `pip install mcp-server-ascom`
-
-**Debug**:
+**Test discovery:**
 ```bash
-# Test directly
-python -m ascom_mcp --version
-
-# Check logs
-tail -f ~/Library/Logs/Claude/mcp-server-ascom.log
+curl http://device-ip:11111/api/v1/description
 ```
 
-## No Devices Found
-
-**Check**:
-1. ASCOM devices on network
-2. Same subnet as computer
-3. Firewall allows discovery
-
-**Test**:
-```bash
-# Use MCP Inspector
-mcp-inspector python -- -m ascom_mcp
-# Run: tools/call discover_ascom_devices {"timeout": 10}
+**Use known devices:**
+```json
+{
+  "mcpServers": {
+    "ascom": {
+      "command": "uvx",
+      "args": ["mcp-server-ascom"],
+      "env": {
+        "ASCOM_KNOWN_DEVICES": "localhost:5555:seestar_alp"
+      }
+    }
+  }
+}
 ```
 
-## Installation Issues
+### Import Errors
 
-**uvx fails**:
+**Wrong:** `from alpaca import discovery`  
+**Right:** `from alpyca import discovery`
+
+The PyPI package `alpyca` imports as `alpaca` in code.
+
+### Connection Timeouts
+
+**Seestar specific:**
+1. Ensure seestar_alp is running
+2. Check telescope is opened: `action_start_up_sequence`
+3. Verify mount is not parked
+
+### UV Command Not Found
+
+**In devcontainer:**
 ```bash
-# Clear cache
-uv cache clean
-# Try pip
-pip install mcp-server-ascom
+# Install UV in container
+pip install uv
 ```
 
-**Import errors**:
-```bash
-# Wrong: import alpaca
-# Right: import alpyca  # Note the 'y'
+### ErrorMessage Field Missing
+
+**Symptom:** ASCOM responses lack ErrorMessage field
+
+**Fix:** Update seestar_alp's `device/shr.py`:
+```python
+if hasattr(err, 'message'):
+    self.ErrorMessage = err.message
+elif hasattr(err, 'args') and err.args:
+    self.ErrorMessage = str(err.args[0])
+else:
+    self.ErrorMessage = str(err)
 ```
 
-## Version Check
+## Debug Commands
 
+### Check Version
 ```bash
-# CLI version
 mcp-server-ascom --version
-
-# Python version
 python -c "import ascom_mcp; print(ascom_mcp.__version__)"
 ```
 
-## Report Issues
+### View Logs
+```bash
+# macOS
+tail -f ~/Library/Logs/Claude/mcp-server-ascom.log
 
-Still stuck? [Open an issue](https://github.com/stellarpunk/mcp-server-ascom/issues) with:
+# Linux
+tail -f ~/.local/share/Claude/logs/mcp-server-ascom.log
+```
+
+### Test with Inspector
+```bash
+npm install -g @modelcontextprotocol/inspector
+mcp-inspector python -- -m ascom_mcp
+```
+
+## Seestar Integration
+
+### Telescope Not Responding
+
+1. Check seestar_alp logs: `tail -f alpyca.log`
+2. Verify startup sequence completed
+3. Ensure not in solar mode for night objects
+
+### Focus Issues
+
+- Temperature changes require refocus
+- Typical ranges: Stars 1800-2000, Terrestrial 1200-1500
+
+### Movement Problems
+
+Remember Seestar angles are counterintuitive:
+- North/South = horizontal pan
+- East/West = vertical tilt
+
+## Getting Help
+
+Include in bug reports:
 - Error message
-- Version (`mcp-server-ascom --version`)
-- Python version (`python --version`)
-- Logs (`~/Library/Logs/Claude/mcp-server-ascom.log`)
+- `mcp-server-ascom --version`
+- `python --version`  
+- Relevant logs
+- Device type
+
+[Open an issue](https://github.com/stellarpunk/mcp-server-ascom/issues)

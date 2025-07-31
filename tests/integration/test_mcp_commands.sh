@@ -1,0 +1,26 @@
+#!/bin/bash
+# MCP ASCOM Integration Test Script
+# Run this in Claude Code to test MCP integration
+
+echo "=== MCP ASCOM Integration Test ==="
+echo ""
+echo "1. Discovering devices..."
+echo "Run: /mcp ascom discover_ascom_devices timeout=5"
+echo ""
+echo "2. Get device info..."
+echo "Run: /mcp ascom get_device_info device_id=\"Telescope_1\""
+echo ""
+echo "3. Connect to telescope..."
+echo "Run: /mcp ascom telescope_connect device_id=\"Telescope_1\""
+echo ""
+echo "4. Test custom action (pi_is_verified)..."
+echo "Run: /mcp ascom telescope_custom_action device_id=\"Telescope_1\" action=\"method_sync\" parameters='{\"method\": \"pi_is_verified\"}'"
+echo ""
+echo "5. Get telescope position..."
+echo "Run: /mcp ascom telescope_get_position device_id=\"Telescope_1\""
+echo ""
+echo "6. Test focus control..."
+echo "Run: /mcp ascom telescope_custom_action device_id=\"Telescope_1\" action=\"method_sync\" parameters='{\"method\": \"get_focuser_position\"}'"
+echo ""
+echo "7. Disconnect..."
+echo "Run: /mcp ascom telescope_disconnect device_id=\"Telescope_1\""

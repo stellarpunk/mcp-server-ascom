@@ -10,19 +10,13 @@ standard_device_properties = {
     "DriverVersion": str,
     "InterfaceVersion": int,
     "Name": str,
-    "SupportedActions": list
+    "SupportedActions": list,
 }
 
 
 # Device-specific capability definitions
 telescope_capabilities = {
-    "required": [
-        "RightAscension",
-        "Declination",
-        "CanSlew",
-        "Slewing",
-        "Tracking"
-    ],
+    "required": ["RightAscension", "Declination", "CanSlew", "Slewing", "Tracking"],
     "optional": [
         "CanPark",
         "AtPark",
@@ -35,8 +29,8 @@ telescope_capabilities = {
         "SiteLatitude",
         "SiteLongitude",
         "SiteElevation",
-        "SiderealTime"
-    ]
+        "SiderealTime",
+    ],
 }
 
 
@@ -49,7 +43,7 @@ camera_capabilities = {
         "PixelSizeY",
         "CameraXSize",
         "CameraYSize",
-        "StartExposure"
+        "StartExposure",
     ],
     "optional": [
         "CanAbortExposure",
@@ -62,18 +56,13 @@ camera_capabilities = {
         "MaxBinY",
         "Gain",
         "Offset",
-        "CanPulseGuide"
-    ]
+        "CanPulseGuide",
+    ],
 }
 
 
 focuser_capabilities = {
-    "required": [
-        "Position",
-        "MaxStep",
-        "IsMoving",
-        "Move"
-    ],
+    "required": ["Position", "MaxStep", "IsMoving", "Move"],
     "optional": [
         "Absolute",
         "MaxIncrement",
@@ -81,52 +70,33 @@ focuser_capabilities = {
         "TempComp",
         "TempCompAvailable",
         "CanHalt",
-        "StepSize"
-    ]
+        "StepSize",
+    ],
 }
 
 
 filterwheel_capabilities = {
-    "required": [
-        "Position",
-        "Names"
-    ],
-    "optional": [
-        "FocusOffsets"
-    ]
+    "required": ["Position", "Names"],
+    "optional": ["FocusOffsets"],
 }
 
 
 dome_capabilities = {
-    "required": [
-        "CanSetAzimuth",
-        "CanSetShutter",
-        "ShutterStatus",
-        "Slewing"
-    ],
+    "required": ["CanSetAzimuth", "CanSetShutter", "ShutterStatus", "Slewing"],
     "optional": [
         "CanPark",
         "CanFindHome",
         "CanSyncAzimuth",
         "Azimuth",
         "AtHome",
-        "AtPark"
-    ]
+        "AtPark",
+    ],
 }
 
 
 rotator_capabilities = {
-    "required": [
-        "Position",
-        "IsMoving",
-        "CanReverse"
-    ],
-    "optional": [
-        "CanMoveMechanical",
-        "MechanicalPosition",
-        "Reverse",
-        "StepSize"
-    ]
+    "required": ["Position", "IsMoving", "CanReverse"],
+    "optional": ["CanMoveMechanical", "MechanicalPosition", "Reverse", "StepSize"],
 }
 
 
@@ -135,22 +105,22 @@ def generate_discovery_response(device_types: list[str]) -> list[dict[str, Any]]
     """Generate a mock discovery response with multiple device types."""
     devices = []
     for i, device_type in enumerate(device_types):
-        devices.append({
-            "DeviceType": device_type,
-            "DeviceNumber": 0,
-            "DeviceName": f"Test {device_type}",
-            "UniqueID": f"test-{device_type.lower()}-001",
-            "Host": "localhost",
-            "Port": 11111 + i,
-            "ApiVersion": 1
-        })
+        devices.append(
+            {
+                "DeviceType": device_type,
+                "DeviceNumber": 0,
+                "DeviceName": f"Test {device_type}",
+                "UniqueID": f"test-{device_type.lower()}-001",
+                "Host": "localhost",
+                "Port": 11111 + i,
+                "ApiVersion": 1,
+            }
+        )
     return devices
 
 
-def generate_error_response(error_message: str, error_code: int = 0x400) -> dict[str, Any]:
+def generate_error_response(
+    error_message: str, error_code: int = 0x400
+) -> dict[str, Any]:
     """Generate standard ASCOM error response."""
-    return {
-        "Value": None,
-        "ErrorNumber": error_code,
-        "ErrorMessage": error_message
-    }
+    return {"Value": None, "ErrorNumber": error_code, "ErrorMessage": error_message}

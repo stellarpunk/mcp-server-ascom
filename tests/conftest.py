@@ -20,7 +20,8 @@ def event_loop():
 def mock_telescope():
     """Mock ASCOM telescope device."""
     telescope = MagicMock()
-    telescope.Connected = False
+    # Properties (synchronous)
+    telescope.Connected = True
     telescope.CanSlew = True
     telescope.CanPark = True
     telescope.CanFindHome = True
@@ -34,6 +35,17 @@ def mock_telescope():
     telescope.DriverInfo = "Mock Driver v1.0"
     telescope.DriverVersion = "1.0"
     telescope.InterfaceVersion = 3
+    
+    # Methods (asynchronous) - need AsyncMock
+    from unittest.mock import AsyncMock
+    telescope.Park = AsyncMock()
+    telescope.Unpark = AsyncMock()
+    telescope.SlewToCoordinatesAsync = AsyncMock()
+    telescope.SlewToCoordinates = AsyncMock()
+    telescope.AbortSlew = AsyncMock()
+    telescope.FindHome = AsyncMock()
+    telescope.SetTracking = AsyncMock()
+    
     return telescope
 
 
@@ -41,7 +53,8 @@ def mock_telescope():
 def mock_camera():
     """Mock ASCOM camera device."""
     camera = MagicMock()
-    camera.Connected = False
+    # Properties (synchronous)
+    camera.Connected = True
     camera.CameraState = 0  # idle
     camera.ImageReady = False
     camera.CanAbortExposure = True
@@ -63,6 +76,14 @@ def mock_camera():
     camera.NumY = 2822
     camera.Description = "Mock Camera"
     camera.DriverInfo = "Mock Camera Driver v1.0"
+    
+    # Methods (asynchronous) - need AsyncMock
+    from unittest.mock import AsyncMock
+    camera.StartExposure = AsyncMock()
+    camera.StopExposure = AsyncMock()
+    camera.AbortExposure = AsyncMock()
+    camera.ImageArray = AsyncMock(return_value=[[0] * 100] * 100)
+    
     return camera
 
 
@@ -77,7 +98,7 @@ def mock_discovery_response():
             "UniqueID": "mock-telescope-001",
             "Host": "localhost",
             "Port": 11111,
-            "ApiVersion": 1
+            "ApiVersion": 1,
         },
         {
             "DeviceName": "Mock Camera",
@@ -86,8 +107,8 @@ def mock_discovery_response():
             "UniqueID": "mock-camera-001",
             "Host": "localhost",
             "Port": 11111,
-            "ApiVersion": 1
-        }
+            "ApiVersion": 1,
+        },
     ]
 
 
@@ -102,21 +123,26 @@ async def mock_device_manager(mock_telescope, mock_camera):
     # Mock discovery
     async def mock_discover(timeout=5.0):
         from ascom_mcp.devices.manager import DeviceInfo
+
         devices = [
-            DeviceInfo({
-                "DeviceName": "Mock Telescope",
-                "DeviceType": "Telescope",
-                "DeviceNumber": 0,
-                "Host": "localhost",
-                "Port": 11111
-            }),
-            DeviceInfo({
-                "DeviceName": "Mock Camera",
-                "DeviceType": "Camera",
-                "DeviceNumber": 0,
-                "Host": "localhost",
-                "Port": 11111
-            })
+            DeviceInfo(
+                {
+                    "DeviceName": "Mock Telescope",
+                    "DeviceType": "Telescope",
+                    "DeviceNumber": 0,
+                    "Host": "localhost",
+                    "Port": 11111,
+                }
+            ),
+            DeviceInfo(
+                {
+                    "DeviceName": "Mock Camera",
+                    "DeviceType": "Camera",
+                    "DeviceNumber": 0,
+                    "Host": "localhost",
+                    "Port": 11111,
+                }
+            ),
         ]
         manager._available_devices = {d.id: d for d in devices}
         return devices
@@ -125,6 +151,7 @@ async def mock_device_manager(mock_telescope, mock_camera):
 
     # Mock alpyca constructors
     import alpyca
+
     alpyca.Telescope = MagicMock(return_value=mock_telescope)
     alpyca.Camera = MagicMock(return_value=mock_camera)
 
@@ -135,20 +162,20 @@ async def mock_device_manager(mock_telescope, mock_camera):
 @pytest.fixture
 async def mcp_server(mock_device_manager):
     """Create MCP server with mocked devices."""
-    from ascom_mcp.server_fastmcp import mcp, server_lifespan
+    # Replace device manager with mock
+    from ascom_mcp import devices
+    from ascom_mcp.server_fastmcp import mcp
     from ascom_mcp.tools.camera import CameraTools
     from ascom_mcp.tools.discovery import DiscoveryTools
     from ascom_mcp.tools.telescope import TelescopeTools
-    
-    # Replace device manager with mock
-    from ascom_mcp import devices
+
     devices.manager._instance = mock_device_manager
 
     # Initialize tools
     discovery_tools = DiscoveryTools(mock_device_manager)
     telescope_tools = TelescopeTools(mock_device_manager)
     camera_tools = CameraTools(mock_device_manager)
-    
+
     # Store tools for access in tests
     mcp._discovery_tools = discovery_tools
     mcp._telescope_tools = telescope_tools
@@ -163,7 +190,7 @@ def initialize_request():
     return InitializeRequest(
         protocolVersion="2025-06-18",
         capabilities={},
-        clientInfo={"name": "test-client", "version": "1.0"}
+        clientInfo={"name": "test-client", "version": "1.0"},
     )
 
 
@@ -176,9 +203,8 @@ def list_tools_request():
 @pytest.fixture
 def call_tool_request():
     """Factory for creating tool call requests."""
+
     def _make_request(tool_name: str, arguments: dict[str, Any]):
-        return CallToolRequest(
-            name=tool_name,
-            arguments=arguments
-        )
+        return CallToolRequest(name=tool_name, arguments=arguments)
+
     return _make_request

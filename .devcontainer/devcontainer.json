@@ -1,0 +1,90 @@
+{
+  "name": "MCP Server ASCOM Development",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "mcp-ascom",
+  "workspaceFolder": "/app",
+  
+  // Features to add
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/ruff:1": {},
+    "ghcr.io/va-h/devcontainers-features/uv:1": {
+      "version": "latest"
+    }
+  },
+
+  // VS Code customizations
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python development
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        
+        // Testing
+        "littlefoxteam.vscode-python-test-adapter",
+        "hbenl.vscode-test-explorer",
+        
+        // Git
+        "github.vscode-pull-request-github",
+        "eamodio.gitlens",
+        
+        // General
+        "streetsidesoftware.code-spell-checker",
+        "gruntfuggly.todo-tree",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true,
+        "python.formatting.provider": "none",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Commands
+  "postCreateCommand": "echo '🔌 MCP Server ASCOM Dev Container Ready!' && uv pip list",
+  "postStartCommand": "cd /app && python -m ascom_mcp --version || echo 'Run: python -m ascom_mcp'",
+  
+  // Run as non-root
+  "remoteUser": "mcp",
+  
+  // Environment
+  "remoteEnv": {
+    "PYTHONPATH": "/app",
+    "IN_DEV_CONTAINER": "true",
+    "ASCOM_KNOWN_DEVICES": "host.docker.internal:5555:seestar_alp"
+  },
+  
+  // Mounts
+  "mounts": [
+    "source=mcp-vscode-extensions,target=/home/mcp/.vscode-server/extensions,type=volume"
+  ],
+
+  // GitHub Codespaces
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "2gb",
+    "storage": "16gb"
+  },
+  
+  // Dependencies already installed by Dockerfile
+  "updateContentCommand": "uv pip list | grep -E '(ascom|fastmcp)' || uv pip install -e .",
+  "waitFor": "postCreateCommand"
+}

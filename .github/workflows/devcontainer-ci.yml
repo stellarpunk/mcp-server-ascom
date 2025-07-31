@@ -1,0 +1,74 @@
+name: DevContainer CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  devcontainer-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Install devcontainer CLI
+      run: npm install -g @devcontainers/cli
+
+    - name: Build DevContainer
+      run: |
+        # Build the devcontainer without features to avoid auth issues
+        devcontainer build --workspace-folder . --skip-post-create
+
+    - name: Test Docker Compose Build
+      run: |
+        docker compose build mcp-ascom
+
+    - name: Run Container Tests
+      run: |
+        # Build test container
+        docker compose build mcp-test
+        
+        # Run tests
+        docker compose run --rm mcp-test || exit 1
+
+  codespaces-compatibility:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate devcontainer.json
+      run: |
+        # Check if devcontainer.json exists and is valid JSON
+        if [ -f .devcontainer/devcontainer.json ]; then
+          jq . .devcontainer/devcontainer.json > /dev/null || exit 1
+          echo "✅ devcontainer.json is valid"
+        else
+          echo "❌ devcontainer.json not found"
+          exit 1
+        fi
+
+    - name: Check Codespaces requirements
+      run: |
+        # Verify required files exist
+        [ -f .devcontainer/Dockerfile ] || echo "⚠️  Dockerfile not in .devcontainer"
+        [ -f docker-compose.yml ] || echo "❌ docker-compose.yml missing"
+        
+        # Check hostRequirements in devcontainer.json
+        jq -r '.hostRequirements' .devcontainer/devcontainer.json || echo "⚠️  No hostRequirements specified"
+        
+    - name: Test MCP Server Import
+      run: |
+        docker run --rm \
+          -v $PWD:/app \
+          -w /app \
+          python:3.12-slim \
+          bash -c "pip install -e . && python -c 'import ascom_mcp; print(ascom_mcp.__version__)'"

@@ -39,7 +39,7 @@ async def example_telescope_session():
                 "type": "telescope",
                 "host": "192.168.1.100",
                 "port": 11111,
-                "connect_hint": "Use 'telescope_connect' with device_id='telescope_0'"
+                "connect_hint": "Use 'telescope_connect' with device_id='telescope_0'",
             },
             {
                 "id": "camera_0",
@@ -47,9 +47,9 @@ async def example_telescope_session():
                 "type": "camera",
                 "host": "192.168.1.101",
                 "port": 11111,
-                "connect_hint": "Use 'camera_connect' with device_id='camera_0'"
-            }
-        ]
+                "connect_hint": "Use 'camera_connect' with device_id='camera_0'",
+            },
+        ],
     }
     print(json.dumps(discovery_response, indent=2))
     print()
@@ -67,8 +67,8 @@ async def example_telescope_session():
             "connected": True,
             "can_slew": True,
             "can_park": True,
-            "tracking": True
-        }
+            "tracking": True,
+        },
     }
     print(json.dumps(connect_response, indent=2))
     print()
@@ -85,13 +85,9 @@ async def example_telescope_session():
             "dec_dms": "-5:23:24",
             "altitude": 45.2,
             "azimuth": 180.5,
-            "sidereal_time": 3.456
+            "sidereal_time": 3.456,
         },
-        "status": {
-            "tracking": True,
-            "slewing": False,
-            "at_park": False
-        }
+        "status": {"tracking": True, "slewing": False, "at_park": False},
     }
     print(json.dumps(position_response, indent=2))
     print()
@@ -108,13 +104,9 @@ async def example_telescope_session():
             "ra_hours": 5.588,
             "dec_degrees": -5.45,
             "ra_hms": "5:35:17.0",
-            "dec_dms": "-5:27:00"
+            "dec_dms": "-5:27:00",
         },
-        "status": {
-            "slewing": True,
-            "target_ra": 5.588,
-            "target_dec": -5.45
-        }
+        "status": {"slewing": True, "target_ra": 5.588, "target_dec": -5.45},
     }
     print(json.dumps(goto_response, indent=2))
     print()
@@ -132,10 +124,7 @@ async def example_telescope_session():
     park_response = {
         "success": True,
         "message": "Telescope parking initiated",
-        "status": {
-            "at_park": False,
-            "slewing": True
-        }
+        "status": {"at_park": False, "slewing": True},
     }
     print(json.dumps(park_response, indent=2))
     print()
@@ -163,8 +152,8 @@ async def example_camera_session():
             "sensor_size": {"width": 4144, "height": 2822},
             "has_cooler": True,
             "cooler_on": True,
-            "ccd_temperature": -10.0
-        }
+            "ccd_temperature": -10.0,
+        },
     }
     print(json.dumps(camera_connect, indent=2))
     print()
@@ -182,13 +171,9 @@ async def example_camera_session():
             "timestamp": datetime.utcnow().isoformat(),
             "ccd_temperature": -10.0,
             "gain": 120,
-            "offset": 30
+            "offset": 30,
         },
-        "image_info": {
-            "width": 4144,
-            "height": 2822,
-            "bit_depth": "uint16"
-        }
+        "image_info": {"width": 4144, "height": 2822, "bit_depth": "uint16"},
     }
     print(json.dumps(capture_response, indent=2))
     print()

@@ -39,22 +39,26 @@ class DiscoveryTools:
             for device in devices:
                 device_dict = device.to_dict()
                 # Add quick connect hint
-                device_dict['connect_hint'] = f"Use '{device.type}_connect' with device_id='{device.id}'"
+                device_dict["connect_hint"] = (
+                    f"Use '{device.type.lower()}_connect' with device_id='{device.id}'"
+                )
                 device_list.append(device_dict)
 
             return {
-                'success': True,
-                'count': len(devices),
-                'devices': device_list,
-                'message': f"Found {len(devices)} ASCOM device(s)" if devices else "No ASCOM devices found on network"
+                "success": True,
+                "count": len(devices),
+                "devices": device_list,
+                "message": f"Found {len(devices)} ASCOM device(s)"
+                if devices
+                else "No ASCOM devices found on network",
             }
 
         except Exception as e:
             logger.error(f"Discovery failed: {e}")
             return {
-                'success': False,
-                'error': str(e),
-                'message': "Discovery failed. Check network connection and ensure ASCOM devices are powered on."
+                "success": False,
+                "error": str(e),
+                "message": "Discovery failed. Check network connection and ensure ASCOM devices are powered on.",
             }
 
     async def get_device_info(self, device_id: str) -> dict[str, Any]:
@@ -74,35 +78,44 @@ class DiscoveryTools:
             info = await self.device_manager.get_device_info(device_id)
 
             # Add capabilities based on device type
-            if info['type'].lower() == 'telescope':
-                info['capabilities'] = [
-                    'goto', 'goto_object', 'park', 'tracking',
-                    'position_reporting', 'slew_rates'
+            if info["type"].lower() == "telescope":
+                info["capabilities"] = [
+                    "goto",
+                    "goto_object",
+                    "park",
+                    "tracking",
+                    "position_reporting",
+                    "slew_rates",
                 ]
-            elif info['type'].lower() == 'camera':
-                info['capabilities'] = [
-                    'capture', 'binning', 'cooling', 'gain_control',
-                    'offset_control', 'subframe'
+            elif info["type"].lower() == "camera":
+                info["capabilities"] = [
+                    "capture",
+                    "binning",
+                    "cooling",
+                    "gain_control",
+                    "offset_control",
+                    "subframe",
                 ]
-            elif info['type'].lower() == 'focuser':
-                info['capabilities'] = [
-                    'move_absolute', 'move_relative', 'temperature_compensation',
-                    'position_reporting'
+            elif info["type"].lower() == "focuser":
+                info["capabilities"] = [
+                    "move_absolute",
+                    "move_relative",
+                    "temperature_compensation",
+                    "position_reporting",
                 ]
-            elif info['type'].lower() == 'filterwheel':
-                info['capabilities'] = [
-                    'filter_selection', 'filter_names', 'position_reporting'
+            elif info["type"].lower() == "filterwheel":
+                info["capabilities"] = [
+                    "filter_selection",
+                    "filter_names",
+                    "position_reporting",
                 ]
 
-            return {
-                'success': True,
-                'device': info
-            }
+            return {"success": True, "device": info}
 
         except Exception as e:
             logger.error(f"Failed to get device info: {e}")
             return {
-                'success': False,
-                'error': str(e),
-                'message': f"Could not get info for device {device_id}"
+                "success": False,
+                "error": str(e),
+                "message": f"Could not get info for device {device_id}",
             }

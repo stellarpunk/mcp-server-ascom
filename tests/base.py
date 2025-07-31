@@ -51,10 +51,10 @@ class BaseDeviceTest(ABC):
 
     def test_device_info_properties(self, mock_device):
         """Test device provides required info properties."""
-        assert hasattr(mock_device, 'Description')
-        assert hasattr(mock_device, 'DriverInfo')
-        assert hasattr(mock_device, 'DriverVersion')
-        assert hasattr(mock_device, 'InterfaceVersion')
+        assert hasattr(mock_device, "Description")
+        assert hasattr(mock_device, "DriverInfo")
+        assert hasattr(mock_device, "DriverVersion")
+        assert hasattr(mock_device, "InterfaceVersion")
 
 
 class BaseToolTest(ABC):
@@ -89,11 +89,13 @@ class BaseToolTest(ABC):
     async def test_connect_returns_success_dict(self, tool_instance, mock_manager):
         """Test connect returns standard success response."""
         # Setup
-        device_info = DeviceInfo({
-            "DeviceType": self.device_type,
-            "DeviceNumber": 0,
-            "DeviceName": f"Test {self.device_type}"
-        })
+        device_info = DeviceInfo(
+            {
+                "DeviceType": self.device_type,
+                "DeviceNumber": 0,
+                "DeviceName": f"Test {self.device_type}",
+            }
+        )
         mock_device = MagicMock()
         mock_device.Connected = True
         connected = ConnectedDevice(device_info, mock_device)

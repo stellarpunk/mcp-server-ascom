@@ -25,7 +25,7 @@ class TestDeviceInfo:
 
         info = DeviceInfo(data)
 
-        assert info.id == "Telescope_0"
+        assert info.id == "telescope_0"
         assert info.name == "Test Telescope"
         assert info.type == "Telescope"
         assert info.host == "192.168.1.100"
@@ -61,7 +61,7 @@ class TestDeviceManager:
         manager = DeviceManager()
         await manager.initialize()
 
-        with patch("alpyca.discovery.search_ipv4") as mock_search:
+        with patch("ascom_mcp.devices.manager.discovery.search_ipv4") as mock_search:
             mock_search.return_value = mock_discovery_response
 
             devices = await manager.discover_devices(timeout=2.0)
@@ -92,14 +92,14 @@ class TestDeviceManager:
             "DeviceNumber": 0,
             "Host": "localhost"
         })
-        manager._available_devices["Telescope_0"] = device_info
+        manager._available_devices["telescope_0"] = device_info
 
-        with patch("alpyca.Telescope") as MockTelescope:
+        with patch("ascom_mcp.devices.manager.Telescope") as MockTelescope:
             MockTelescope.return_value = mock_telescope
 
-            connected = await manager.connect_device("Telescope_0")
+            connected = await manager.connect_device("telescope_0")
 
-            assert connected.info.id == "Telescope_0"
+            assert connected.info.id == "telescope_0"
             assert connected.client == mock_telescope
             assert mock_telescope.Connected is True
 
@@ -111,12 +111,12 @@ class TestDeviceManager:
 
         # Setup
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
-        manager._available_devices["Telescope_0"] = device_info
+        manager._available_devices["telescope_0"] = device_info
         connected = ConnectedDevice(device_info, mock_telescope)
-        manager._connected_devices["Telescope_0"] = connected
+        manager._connected_devices["telescope_0"] = connected
 
         # Should return existing connection
-        result = await manager.connect_device("Telescope_0")
+        result = await manager.connect_device("telescope_0")
 
         assert result == connected
 
@@ -129,12 +129,12 @@ class TestDeviceManager:
         # Setup connected device
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
-        manager._connected_devices["Telescope_0"] = connected
+        manager._connected_devices["telescope_0"] = connected
 
-        await manager.disconnect_device("Telescope_0")
+        await manager.disconnect_device("telescope_0")
 
         assert mock_telescope.Connected is False
-        assert "Telescope_0" not in manager._connected_devices
+        assert "telescope_0" not in manager._connected_devices
 
     @pytest.mark.asyncio
     async def test_get_connected_device(self):
@@ -146,9 +146,9 @@ class TestDeviceManager:
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         mock_camera = MagicMock()
         connected = ConnectedDevice(device_info, mock_camera)
-        manager._connected_devices["Camera_0"] = connected
+        manager._connected_devices["camera_0"] = connected
 
-        result = manager.get_connected_device("Camera_0")
+        result = manager.get_connected_device("camera_0")
 
         assert result == connected
         assert result.last_used > connected.connected_at
@@ -166,9 +166,9 @@ class TestDeviceManager:
             "DeviceName": "Test Scope"
         })
         connected = ConnectedDevice(device_info, mock_telescope)
-        manager._connected_devices["Telescope_0"] = connected
+        manager._connected_devices["telescope_0"] = connected
 
-        info = await manager.get_device_info("Telescope_0")
+        info = await manager.get_device_info("telescope_0")
 
         assert info["connected"] is True
         assert info["name"] == "Test Scope"
@@ -184,7 +184,7 @@ class TestDeviceManager:
         # Add connected device
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
-        manager._connected_devices["Telescope_0"] = connected
+        manager._connected_devices["telescope_0"] = connected
 
         await manager.shutdown()
 

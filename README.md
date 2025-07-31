@@ -6,52 +6,34 @@
 [![Tests](https://github.com/stellarpunk/mcp-server-ascom/workflows/Test/badge.svg)](https://github.com/stellarpunk/mcp-server-ascom/actions)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Control astronomy equipment through AI. MCP 2025-06-18 compliant.
+Control telescopes with AI. Works with any ASCOM device.
 
-## What's New in v0.3.0
+## v0.3.0 Updates
 
-- **FastMCP** - Uses official SDK. Half the code. Same functionality.
-- **Structured Logging** - JSON to stderr. OpenTelemetry compatible.
-- **Better Errors** - FastMCP validates protocol compliance automatically.
+- FastMCP 2.0 - Half the code
+- JSON logging - OpenTelemetry ready
+- Better errors - Protocol compliance built-in
 
 ## Features
 
-- **FastMCP** - Production-ready. Clean API.
-- **Observable** - JSON logs. Grafana-ready.
-- **Any ASCOM Device** - Telescopes. Cameras. Focusers. More.
-- **Natural Language** - "Point at M31" works.
-- **Auto-Discovery** - Zero configuration.
-- **Fast** - Async. Never blocks.
-- **Secure** - OAuth ready. Off by default.
-- **Extensible** - Add device types easily.
-- **Tested** - Full coverage. Type safe.
+- Works with any ASCOM telescope, camera, or focuser
+- Natural language control: "Point at the Orion Nebula"
+- Auto-discovers devices on your network
+- Async architecture - never blocks
+- Full test coverage and type safety
 
 ## Installation
 
-### Option 1: pip install (Simplest)
 ```bash
+# Quick start
 pip install mcp-server-ascom
-```
 
-### Option 2: uvx (No install needed)
-```bash
+# Or use uvx (no install)
 uvx mcp-server-ascom
 ```
 
-### Option 3: From source
-```bash
-git clone https://github.com/stellarpunk/mcp-server-ascom.git
-cd mcp-server-ascom
-pip install -e .
-```
+## Claude Desktop Setup
 
-**Note:** The `alpyca` package (ASCOM library) imports as `alpaca` in Python code.
-
-## Configuration
-
-### Claude Desktop
-
-#### Quick Setup (Recommended)
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
@@ -64,44 +46,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-This uses `uvx` to automatically handle Python environments and dependencies.
-
-#### Alternative: Direct Installation
-```bash
-pip install mcp-server-ascom
-```
-
-Then use:
-```json
-{
-  "mcpServers": {
-    "ascom": {
-      "command": "mcp-server-ascom"
-    }
-  }
-}
-```
-
-### Running the Server
-
-```bash
-# Make sure virtual environment is activated
-source .venv/bin/activate
-
-# Run the server
-python -m ascom_mcp
-```
-
-### MCP Inspector (Testing)
-```bash
-npm install -g @modelcontextprotocol/inspector
-
-# With virtual environment
-mcp-inspector .venv/bin/python -m ascom_mcp
-
-# Or if mcp-server-ascom is in PATH
-mcp-inspector mcp-server-ascom
-```
+Restart Claude Desktop to activate.
 
 ## Usage
 
@@ -115,91 +60,50 @@ AI: Slewing to M42... Done.
 
 ## Supported Equipment
 
-ASCOM Alpaca devices: Telescopes. Cameras. Focusers. Filter wheels. Domes.
+Any ASCOM Alpaca device: telescopes, cameras, focusers, filter wheels, domes.
 
-## Tools
+## Available Tools
 
-**Find devices**: `discover_ascom_devices`  
-**Control telescope**: `connect` `goto` `goto_object` `park`  
-**Use camera**: `connect` `capture` `get_status`
+- `discover_ascom_devices` - Find devices on network
+- `telescope_connect` / `camera_connect` - Connect to device
+- `telescope_goto` / `telescope_goto_object` - Point telescope
+- `telescope_park` - Park at home position
+- `camera_capture` - Take images
 
 ## Development
 
-### Setup
 ```bash
 git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
-
-# Create virtual environment (choose one)
-uv venv                    # Using uv
-python -m venv .venv       # Using standard venv
-
-# Activate
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install with dev dependencies
-pip install -e ".[dev]"    # or: uv pip install -e ".[dev]"
-```
-
-### Testing
-```bash
-# Run all tests
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
 pytest
-
-# Run with coverage
-pytest --cov=ascom_mcp
-
-# Run specific test file
-pytest tests/test_device_manager.py
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Security
 
-**Secure by Design** - Local connections only by default.
-
-### Advanced Security (OAuth)
-For production deployments with remote access:
-
-```bash
-cp .env.example .env
-# Edit .env: ASCOM_MCP_OAUTH_ENABLED=true
-# Configure OAuth provider settings
-# Restart server
-```
-
-See [security.py](src/ascom_mcp/security.py) for configuration options.
+Local connections only by default. For remote access, enable OAuth in `.env`.
 
 ## Troubleshooting
 
-### ModuleNotFoundError: No module named 'alpyca'
-The `alpyca` package installs as `alpaca`. Use:
-```python
-from alpaca import discovery  # NOT from alpyca
-```
+**No devices found?**
+- Check device is powered on and on same network
+- Allow UDP port 32227 through firewall
+- Test with: `curl http://device-ip:11111/api/v1/description`
 
-### Virtual Environment Issues
-Always activate your virtual environment before running:
-```bash
-source .venv/bin/activate  # Linux/macOS
-.venv\Scripts\activate     # Windows
-```
+**Import errors?** The `alpyca` package imports as `alpaca`.
 
-### No ASCOM devices found
-1. Ensure devices are powered on and connected to network
-2. Check firewall settings (UDP port 32227 for discovery)
-3. Try manual discovery at known IP:
-   ```bash
-   curl http://device-ip:11111/api/v1/description
-   ```
+See [troubleshooting.md](docs/troubleshooting.md) for more.
+
+## Documentation
+
+- [Getting Started](docs/GETTING_STARTED.md) - Quick setup guide
+- [API Reference](docs/API.md) - Tool documentation
+- [Architecture](docs/ARCHITECTURE.md) - System design
+- [Seestar Integration](docs/seestar_integration.md) - Seestar S50 guide
 
 ## License
 
-MIT - see [LICENSE](LICENSE)
-
-## See Also
-
-- [Seestar S50 Integration Guide](docs/seestar_integration.md)
-- [ASCOM Standards](https://ascom-standards.org/)
-- [Alpaca API Reference](https://ascom-standards.org/api/)
+MIT

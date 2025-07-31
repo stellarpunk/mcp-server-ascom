@@ -14,7 +14,8 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_connect_success(self, mock_telescope):
         """Test successful telescope connection."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
+        mock_manager.connect_device = AsyncMock()
         device_info = DeviceInfo({
             "DeviceType": "Telescope",
             "DeviceNumber": 0,
@@ -34,7 +35,8 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_disconnect_with_park(self, mock_telescope):
         """Test disconnect parks telescope if needed."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
+        mock_manager.disconnect_device = AsyncMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -53,7 +55,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_goto_valid_coordinates(self, mock_telescope):
         """Test goto with valid coordinates."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -72,7 +74,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_goto_invalid_ra(self):
         """Test goto with invalid RA."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         tools = TelescopeTools(mock_manager)
 
         # RA out of range
@@ -84,7 +86,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_goto_invalid_dec(self):
         """Test goto with invalid declination."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         tools = TelescopeTools(mock_manager)
 
         # Dec out of range
@@ -96,7 +98,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_goto_telescope_busy(self, mock_telescope):
         """Test goto when telescope is slewing."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -112,7 +114,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_goto_object_success(self, mock_telescope):
         """Test goto named object."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -141,7 +143,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_get_position(self, mock_telescope):
         """Test getting telescope position."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -165,7 +167,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_park_success(self, mock_telescope):
         """Test parking telescope."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected
@@ -183,7 +185,7 @@ class TestTelescopeTools:
     @pytest.mark.asyncio
     async def test_park_already_parked(self, mock_telescope):
         """Test parking when already parked."""
-        mock_manager = AsyncMock()
+        mock_manager = MagicMock()
         device_info = DeviceInfo({"DeviceType": "Telescope", "DeviceNumber": 0})
         connected = ConnectedDevice(device_info, mock_telescope)
         mock_manager.get_connected_device.return_value = connected

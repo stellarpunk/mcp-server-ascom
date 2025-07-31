@@ -6,7 +6,7 @@ Handles device discovery, connection management, and state caching.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from aiohttp import ClientSession
@@ -26,32 +26,32 @@ class DeviceInfo:
     """Information about an ASCOM device."""
 
     def __init__(self, device_data: dict[str, Any]):
-        device_type = device_data.get('DeviceType', 'unknown')
-        device_number = device_data.get('DeviceNumber', 0)
-        self.id = f"{device_type}_{device_number}"
-        self.name = device_data.get('DeviceName', 'Unknown Device')
-        self.type = device_data.get('DeviceType', 'unknown')
-        self.number = device_data.get('DeviceNumber', 0)
-        self.unique_id = device_data.get('UniqueID', '')
-        self.host = device_data.get('Host', 'localhost')
-        self.port = device_data.get('Port', 11111)
-        self.api_version = device_data.get('ApiVersion', 1)
-        self.discovered_at = datetime.utcnow()
+        device_type = device_data.get("DeviceType", "unknown")
+        device_number = device_data.get("DeviceNumber", 0)
+        self.id = f"{device_type.lower()}_{device_number}"
+        self.name = device_data.get("DeviceName", "Unknown Device")
+        self.type = device_data.get("DeviceType", "unknown")
+        self.number = device_data.get("DeviceNumber", 0)
+        self.unique_id = device_data.get("UniqueID", "")
+        self.host = device_data.get("Host", "localhost")
+        self.port = device_data.get("Port", 11111)
+        self.api_version = device_data.get("ApiVersion", 1)
+        self.discovered_at = datetime.now(timezone.utc)
         self._raw_data = device_data
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
-            'id': self.id,
-            'name': self.name,
-            'type': self.type,
-            'number': self.number,
-            'unique_id': self.unique_id,
-            'host': self.host,
-            'port': self.port,
-            'api_version': self.api_version,
-            'discovered_at': self.discovered_at.isoformat(),
-            'connection_url': f"http://{self.host}:{self.port}/api/v{self.api_version}"
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "number": self.number,
+            "unique_id": self.unique_id,
+            "host": self.host,
+            "port": self.port,
+            "api_version": self.api_version,
+            "discovered_at": self.discovered_at.isoformat(),
+            "connection_url": f"http://{self.host}:{self.port}/api/v{self.api_version}",
         }
 
 
@@ -61,12 +61,12 @@ class ConnectedDevice:
     def __init__(self, device_info: DeviceInfo, client: Any):
         self.info = device_info
         self.client = client
-        self.connected_at = datetime.utcnow()
-        self.last_used = datetime.utcnow()
+        self.connected_at = datetime.now(timezone.utc)
+        self.last_used = datetime.now(timezone.utc)
 
     def update_last_used(self):
         """Update last used timestamp."""
-        self.last_used = datetime.utcnow()
+        self.last_used = datetime.now(timezone.utc)
 
 
 class DeviceManager:
@@ -111,7 +111,9 @@ class DeviceManager:
 
             try:
                 # First try standard alpyca discovery - run in thread to avoid blocking
-                devices = await asyncio.to_thread(discovery.search_ipv4, timeout=timeout)
+                devices = await asyncio.to_thread(
+                    discovery.search_ipv4, timeout=timeout
+                )
 
                 # Clear old devices
                 self._available_devices.clear()
@@ -151,10 +153,12 @@ class DeviceManager:
         devices = []
         for _device_id, connected in self._connected_devices.items():
             device_dict = connected.info.to_dict()
-            device_dict.update({
-                'connected_at': connected.connected_at.isoformat(),
-                'last_used': connected.last_used.isoformat()
-            })
+            device_dict.update(
+                {
+                    "connected_at": connected.connected_at.isoformat(),
+                    "last_used": connected.last_used.isoformat(),
+                }
+            )
             devices.append(device_dict)
         return devices
 
@@ -187,13 +191,13 @@ class DeviceManager:
                 client = None
                 base_url = f"{device_info.host}:{device_info.port}"
 
-                if device_info.type.lower() == 'telescope':
+                if device_info.type.lower() == "telescope":
                     client = Telescope(base_url, device_info.number)
-                elif device_info.type.lower() == 'camera':
+                elif device_info.type.lower() == "camera":
                     client = Camera(base_url, device_info.number)
-                elif device_info.type.lower() == 'focuser':
+                elif device_info.type.lower() == "focuser":
                     client = Focuser(base_url, device_info.number)
-                elif device_info.type.lower() == 'filterwheel':
+                elif device_info.type.lower() == "filterwheel":
                     client = FilterWheel(base_url, device_info.number)
                 else:
                     raise ConnectionError(
@@ -257,29 +261,29 @@ class DeviceManager:
     async def _check_known_devices(self, found_devices: list[DeviceInfo]) -> None:
         """
         Check known devices that don't implement UDP discovery.
-        
+
         Queries the management API of each known device to discover
         configured devices.
         """
         for host, port, name in config.known_devices:
             logger.info(f"Checking known device: {name} at {host}:{port}")
-            
+
             try:
                 # Query management API
                 url = f"http://{host}:{port}/management/v1/configureddevices"
                 async with self._session.get(url, timeout=2.0) as response:
                     if response.status == 200:
                         data = await response.json()
-                        devices = data.get('Value', [])
-                        
+                        devices = data.get("Value", [])
+
                         for device_data in devices:
                             # Add host and port to device data
-                            device_data['Host'] = host
-                            device_data['Port'] = port
-                            
+                            device_data["Host"] = host
+                            device_data["Port"] = port
+
                             # Create DeviceInfo
                             device_info = DeviceInfo(device_data)
-                            
+
                             # Check if not already discovered
                             if device_info.id not in self._available_devices:
                                 self._available_devices[device_info.id] = device_info
@@ -292,7 +296,7 @@ class DeviceManager:
                         logger.warning(
                             f"Known device {name} returned status {response.status}"
                         )
-                        
+
             except asyncio.TimeoutError:
                 logger.warning(f"Known device {name} at {host}:{port} timed out")
             except Exception as e:
@@ -304,25 +308,25 @@ class DeviceManager:
         if device_id in self._connected_devices:
             connected = self._connected_devices[device_id]
             info = connected.info.to_dict()
-            info['connected'] = True
+            info["connected"] = True
 
             # Get additional info from device
             try:
                 client = connected.client
-                info['driver_info'] = client.DriverInfo
-                info['driver_version'] = client.DriverVersion
-                info['interface_version'] = client.InterfaceVersion
-                info['description'] = client.Description
+                info["driver_info"] = client.DriverInfo
+                info["driver_version"] = client.DriverVersion
+                info["interface_version"] = client.InterfaceVersion
+                info["description"] = client.Description
 
                 # Type-specific info
-                if connected.info.type.lower() == 'telescope':
-                    info['can_slew'] = client.CanSlew
-                    info['can_park'] = client.CanPark
-                    info['can_find_home'] = client.CanFindHome
-                elif connected.info.type.lower() == 'camera':
-                    info['sensor_type'] = client.SensorType
-                    info['pixel_size'] = client.PixelSizeX
-                    info['max_bin'] = client.MaxBinX
+                if connected.info.type.lower() == "telescope":
+                    info["can_slew"] = client.CanSlew
+                    info["can_park"] = client.CanPark
+                    info["can_find_home"] = client.CanFindHome
+                elif connected.info.type.lower() == "camera":
+                    info["sensor_type"] = client.SensorType
+                    info["pixel_size"] = client.PixelSizeX
+                    info["max_bin"] = client.MaxBinX
 
             except Exception as e:
                 logger.warning(f"Could not get extended info: {e}")
@@ -332,7 +336,7 @@ class DeviceManager:
         # Check if available
         elif device_id in self._available_devices:
             info = self._available_devices[device_id].to_dict()
-            info['connected'] = False
+            info["connected"] = False
             return info
 
         else:

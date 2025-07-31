@@ -54,10 +54,7 @@ class BaseDeviceTools(ABC):
         Returns:
             Standard success response dict
         """
-        response = {
-            "success": True,
-            "message": message
-        }
+        response = {"success": True, "message": message}
         response.update(data)
         return response
 
@@ -71,9 +68,6 @@ class BaseDeviceTools(ABC):
         Returns:
             Standard error response dict
         """
-        response = {
-            "success": False,
-            "error": error
-        }
+        response = {"success": False, "error": error}
         response.update(data)
         return response

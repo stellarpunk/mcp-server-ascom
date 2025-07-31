@@ -1,68 +1,50 @@
-# ASCOM MCP Bridge Research
+# Documentation
 
-## Overview
+## Quick Links
 
-This directory contains comprehensive research on ASCOM (Astronomy Common Object Model) standards to inform the design of an MCP (Model Context Protocol) bridge that will enable AI-powered control of astronomical equipment.
+### Getting Started
+- **[Installation & Setup](GETTING_STARTED.md)** - Get up and running
+- **[API Reference](API.md)** - All available tools
+- **[Troubleshooting](troubleshooting.md)** - Fix common issues
 
-## Research Goals
+### Integration Guides  
+- **[Seestar S50](seestar_integration.md)** - Seestar-specific guide
+- **[MCP Setup](MCP_INTEGRATION.md)** - Claude Code configuration
+- **[Simulator](simulator_setup.md)** - Test without hardware
 
-1. **Understand ASCOM Architecture** - Platform evolution, device types, and API specifications
-2. **Analyze Community Needs** - Pain points, feature requests, and adoption patterns
-3. **Design MCP Bridge** - Create a bridge that respects ASCOM standards while enabling AI control
-4. **Enable Innovation** - Add AI-driven features that enhance astronomical observations
+### Technical Docs
+- **[Architecture](ARCHITECTURE.md)** - System design
+- **[Development](development.md)** - Contributing
+- **[Testing](testing-strategy.md)** - Test framework
 
 ## Directory Structure
 
 ```
-ascom/
-├── architecture/           # ASCOM platform and protocol details
-├── api_analysis/          # Detailed analysis of each device API
-├── community/             # Ecosystem, contributors, and governance
-├── roadmap/               # Future plans and opportunities
-├── mcp_bridge_design/     # Our MCP bridge implementation strategy
-└── references/            # Citations and research quality notes
+docs/
+├── User Guides
+│   ├── GETTING_STARTED.md
+│   ├── API.md
+│   └── troubleshooting.md
+├── Integration
+│   ├── seestar_integration.md
+│   ├── MCP_INTEGRATION.md
+│   └── simulator_setup.md
+├── Technical
+│   ├── ARCHITECTURE.md
+│   ├── development.md
+│   └── testing-strategy.md
+└── Reference
+    ├── EXECUTIVE_SUMMARY.md
+    └── MIGRATION_v0.3.0.md
 ```
 
-## Key Research Questions
+## Key Concepts
 
-1. **Technical Architecture**
-   - How does ASCOM Alpaca work?
-   - What are the device types and their APIs?
-   - How is device discovery handled?
-   - What are the async patterns?
+**ASCOM** - Astronomy Common Object Model, standard for device control  
+**MCP** - Model Context Protocol, enables AI control  
+**Alpaca** - HTTP/REST API for ASCOM devices  
+**FastMCP** - Framework for building MCP servers
 
-2. **Community & Adoption**
-   - Who maintains ASCOM?
-   - What software uses ASCOM?
-   - What are common pain points?
-   - How can we contribute?
+## Contributing
 
-3. **MCP Integration**
-   - How to map ASCOM devices to MCP tools?
-   - What AI enhancements can we add?
-   - How to ensure compatibility?
-   - What's our value proposition?
-
-## Research Standards
-
-- **Citations Required**: Every fact must have a source
-- **Confidence Levels**: Mark as High/Medium/Low/Inference
-- **Distinguish Facts from Interpretation**: Be clear about what's documented vs inferred
-- **Cross-Reference**: Validate information from multiple sources
-
-## Strategic Vision
-
-Create the first MCP server for astronomical equipment that:
-- Works with any ASCOM-compatible device
-- Enables natural language telescope control
-- Adds AI-driven observation planning
-- Integrates with SpatialLM for sky mapping
-- Respects existing ASCOM standards
-
-## Status
-
-Research initiated: July 30, 2025
-
----
-
-*This research will inform the development of `ascom-mcp-server`, bridging AI capabilities with the astronomy community's existing standards and tools.*
+See [development.md](development.md) for guidelines.

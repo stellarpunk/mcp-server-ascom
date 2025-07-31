@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mcp-ascom:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+      cache_from:
+        - python:3.12-slim
+    container_name: mcp-ascom
+    restart: unless-stopped
+    environment:
+      # Default to local seestar_alp, can be overridden
+      - ASCOM_KNOWN_DEVICES=${ASCOM_KNOWN_DEVICES:-host.docker.internal:5555:seestar_alp}
+      - ASCOM_DISCOVERY_TIMEOUT=${ASCOM_DISCOVERY_TIMEOUT:-5.0}
+      - PYTHONUNBUFFERED=1
+    # MCP communicates over stdio, so we need to keep stdin open
+    stdin_open: true
+    tty: true
+    networks:
+      - mcp-net
+    volumes:
+      # Mount for development
+      - ./src:/app/src:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Test runner for MCP server
+  mcp-test:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+      target: builder
+    container_name: mcp-test
+    command: ["pytest", "tests/", "-v", "--cov=ascom_mcp"]
+    volumes:
+      - ./tests:/app/tests:ro
+      - ./src:/app/src:ro
+      - test-results:/app/test-results
+    environment:
+      - PYTEST_CACHE_DIR=/tmp/pytest_cache
+    networks:
+      - mcp-net
+    profiles:
+      - test
+
+networks:
+  mcp-net:
+    driver: bridge
+    # Enable communication with host if seestar_alp is running locally
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
+
+volumes:
+  test-results:
+    driver: local
