@@ -119,10 +119,16 @@ git clone https://github.com/stellarpunk/mcp-server-ascom.git
 cd mcp-server-ascom
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
+
+# Development with hot-reload
+invoke dev --hot  # Auto-restarts on code changes
+
+# Run tests
 pytest
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Hot-reload uses `watchmedo` to monitor Python files and restart automatically.
+See [Development Guide](docs/development.md) for details.
 
 ## Security
 

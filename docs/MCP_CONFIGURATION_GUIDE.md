@@ -33,9 +33,32 @@ No longer needed - devices are resolved on-demand from multiple sources.
 
 ## Claude Code Configuration
 
-### Optimal Configuration (v0.4.0+)
+### Hot-Reload Development (Recommended)
 
-Create or update `~/.claude.json`:
+Run server with auto-restart:
+```bash
+cd mcp-server-ascom
+invoke dev --hot --transport=streamable-http
+```
+
+Configure Claude Code (`~/.claude.json`):
+```json
+{
+  "mcpServers": {
+    "ascom": {
+      "type": "http",
+      "url": "http://localhost:3000",
+      "transport": "streamable-http"
+    }
+  }
+}
+```
+
+Changes reload instantly. No restarts needed.
+
+### Standard Configuration
+
+For production or stable development:
 
 ```json
 {
@@ -43,9 +66,9 @@ Create or update `~/.claude.json`:
     "ascom": {
       "type": "stdio",
       "command": "/path/to/venv/bin/python",
-      "args": ["-m", "ascom_mcp.server"],
+      "args": ["-m", "ascom_mcp"],
       "env": {
-        "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50,telescope_99:localhost:4700:Simulator"
+        "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50"
       }
     }
   }
@@ -54,6 +77,7 @@ Create or update `~/.claude.json`:
 
 ### Using PyPI Package
 
+Install once, run anywhere:
 ```json
 {
   "mcpServers": {

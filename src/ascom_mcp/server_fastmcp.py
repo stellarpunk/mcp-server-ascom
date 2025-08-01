@@ -57,6 +57,7 @@ async def server_lifespan(server: FastMCP):
 
     event_manager = EventStreamManager()
     event_bridge = SeestarEventBridge(event_manager)
+    event_bridge.setup_event_loop()  # Capture asyncio event loop for sync->async bridge
     
     # Register event callbacks
     device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
@@ -91,6 +92,7 @@ async def ensure_initialized():
         
     if event_bridge is None:
         event_bridge = SeestarEventBridge(event_manager)
+        event_bridge.setup_event_loop()  # Capture asyncio event loop
         # Register event callbacks
         device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
 
@@ -696,10 +698,10 @@ def run():
 
             traceback.print_exc()
     elif args.transport == "sse":
-        logger.debug("Starting SSE transport", port=args.port)
+        logger.debug(f"Starting SSE transport on port {args.port}")
         mcp.run(transport="sse", port=args.port)
     elif args.transport == "streamable-http":
-        logger.debug("Starting streamable-http transport", port=args.port)
+        logger.debug(f"Starting streamable-http transport on port {args.port}")
         mcp.run(transport="streamable-http", port=args.port)
 
 

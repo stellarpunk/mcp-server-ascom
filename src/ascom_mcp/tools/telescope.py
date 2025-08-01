@@ -7,6 +7,15 @@ Provides telescope control capabilities including goto, tracking, and parking.
 import logging
 from typing import Any
 
+# For Seestar EventBus integration
+try:
+    from blinker import signal
+    BLINKER_AVAILABLE = True
+except ImportError:
+    BLINKER_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("Blinker not available - Seestar event streaming will be disabled")
+
 # Make astropy optional for now due to environment issues
 try:
     from astropy import units as u
@@ -56,6 +65,47 @@ class TelescopeTools(BaseDeviceTools):
                 else None,
             }
 
+            # Hook into Seestar EventBus for real-time events
+            logger.debug(f"EventBus check: BLINKER_AVAILABLE={BLINKER_AVAILABLE}, port={connected.info.port}, name={connected.info.name}")
+            if BLINKER_AVAILABLE and connected.info.port == 5555 and "seestar" in connected.info.name.lower():
+                try:
+                    # Import event bridge access
+                    from ..server_fastmcp import event_bridge, event_tools
+                    
+                    logger.debug(f"Event bridge check: event_bridge={event_bridge is not None}, event_tools={event_tools is not None}")
+                    if event_bridge and event_tools:
+                        # Set up event handling for this device
+                        await event_tools.setup_device_events(device_id)
+                        
+                        # Connect to the Seestar EventBus signal
+                        device_name = f"Seestar {connected.info.name.split()[-1]}"  # e.g., "Seestar Alpha"
+                        signal_name = f"{device_name}.eventbus"
+                        logger.info(f"Attempting to connect to EventBus signal: {signal_name}")
+                        
+                        eventbus_signal = signal(signal_name)
+                        
+                        # Create a callback that forwards events to our event bridge
+                        def forward_event(event_data):
+                            logger.debug(f"EventBus event received: {event_data}")
+                            if event_bridge._event_loop:
+                                # Forward to event bridge (handles async conversion)
+                                event_bridge.handle_sync_event(device_id, event_data)
+                        
+                        # Connect to the signal
+                        eventbus_signal.connect(forward_event, weak=False)
+                        logger.info(f"✅ Connected to Seestar EventBus for {device_id} (signal: {signal_name})")
+                        
+                        # Store the connection for cleanup
+                        if not hasattr(self, '_eventbus_connections'):
+                            self._eventbus_connections = {}
+                        self._eventbus_connections[device_id] = (eventbus_signal, forward_event)
+                        
+                except Exception as e:
+                    logger.warning(f"Could not connect to Seestar EventBus: {e}", exc_info=True)
+                    # Non-fatal - telescope still works without events
+            else:
+                logger.debug(f"EventBus not connected: conditions not met")
+
             return {
                 "success": True,
                 "message": f"Connected to {connected.info.name}",
@@ -84,6 +134,13 @@ class TelescopeTools(BaseDeviceTools):
                 logger.info("Parking telescope before disconnect")
                 telescope.Park()
 
+            # Clean up EventBus connection if present
+            if hasattr(self, '_eventbus_connections') and device_id in self._eventbus_connections:
+                eventbus_signal, callback = self._eventbus_connections[device_id]
+                eventbus_signal.disconnect(callback)
+                del self._eventbus_connections[device_id]
+                logger.info(f"Disconnected from Seestar EventBus for {device_id}")
+            
             # Disconnect
             await self.device_manager.disconnect_device(device_id)
 

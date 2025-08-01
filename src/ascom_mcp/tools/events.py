@@ -66,7 +66,7 @@ class EventTools:
             return {
                 "success": True,
                 "device_id": device_id,
-                "device_name": device_info.name,
+                "device_name": device_info["name"],
                 "event_count": len(events["events"]),
                 "events": events["events"],
                 "available_types": events.get("available_types", []),
@@ -102,7 +102,7 @@ class EventTools:
 
             return {
                 "success": True,
-                "message": f"Cleared event history for {device_info.name}",
+                "message": f"Cleared event history for {device_info['name']}",
             }
 
         except Exception as e:
@@ -153,15 +153,15 @@ class EventTools:
             await self.event_manager.set_device_metadata(
                 device_id,
                 {
-                    "name": device_info.name,
-                    "type": device_info.device_type,
-                    "unique_id": device_info.unique_id,
+                    "name": device_info["name"],
+                    "type": device_info.get("type", "unknown"),
+                    "unique_id": device_info.get("unique_id", ""),
                 },
             )
 
             # For Seestar devices, we'll hook into the eventbus
             # This will be done in the telescope connection code
-            logger.info(f"Event handling prepared for {device_info.name}")
+            logger.info(f"Event handling prepared for {device_info['name']}")
 
         except Exception as e:
             logger.error(f"Failed to setup device events: {e}")

@@ -76,6 +76,23 @@ Three layers. Each serves a purpose.
 3. **Test stdio first** - Catches most issues
 4. **Clear UV cache** - `uv cache clean`
 
+## Hot-Reload Development
+
+FastMCP 2.0 doesn't have built-in hot-reload, but we support it via watchdog:
+
+```bash
+# Standard development (manual restart)
+invoke dev
+
+# With hot-reload (auto-restart on file changes)
+invoke dev --hot
+
+# Hot-reload with HTTP transport (for testing)
+invoke dev --hot --transport=sse
+```
+
+The `--hot` flag uses `watchmedo` to monitor Python files and restart automatically.
+
 ## Running Tests
 
 **Activate venv first.**

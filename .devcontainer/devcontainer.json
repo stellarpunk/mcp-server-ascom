@@ -69,7 +69,7 @@
   "remoteEnv": {
     "PYTHONPATH": "/app",
     "IN_DEV_CONTAINER": "true",
-    "ASCOM_KNOWN_DEVICES": "host.docker.internal:5555:seestar_alp"
+    "ASCOM_DIRECT_DEVICES": "telescope_1:host.docker.internal:5555:Seestar S50,telescope_99:host.docker.internal:4700:Simulator"
   },
   
   // Mounts
@@ -85,6 +85,15 @@
   },
   
   // Dependencies already installed by Dockerfile
-  "updateContentCommand": "uv pip list | grep -E '(ascom|fastmcp)' || uv pip install -e .",
-  "waitFor": "postCreateCommand"
+  "updateContentCommand": "uv pip list | grep -E '(ascom|fastmcp)' || uv pip install -e '.[dev]'",
+  "waitFor": "postCreateCommand",
+  
+  // Port forwarding for HTTP transport
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "MCP HTTP Transport",
+      "onAutoForward": "notify"
+    }
+  }
 }

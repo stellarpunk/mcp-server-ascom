@@ -1,5 +1,48 @@
 # Next Session Notes
 
+## 2025-08-01 Session Update
+
+### 🔥 Hot-Reload Development Working!
+- Successfully implemented with watchdog
+- Auto-restarts on Python file changes
+- Run: `invoke dev --hot --transport=streamable-http --log-file=mcp_dev.log`
+- Monitor: `invoke monitor` or `tail -f mcp_dev.log`
+
+### 📦 Dependencies & Version Management
+- Fixed version mismatch using `importlib.metadata`
+- Added `blinker>=1.7.0` for event capture
+- Updated all environments (venv, devcontainer)
+- Remember: `alpyca` package imports as `alpaca`
+
+### 🐛 Event Capture Not Working Yet
+Despite all infrastructure in place:
+- Event manager, resources, tools all ready ✅
+- Blinker installed and importing ✅
+- EventBus connection code written ✅
+- **BUT**: No events being captured ❌
+
+**Debug Plan:**
+1. Check signal name format (might be mismatch)
+2. Run with `LOG_LEVEL=DEBUG` and capture stderr: `2>&1`
+3. Verify seestar_alp is actually emitting events
+4. Test with `action_start_up_sequence` initialization
+
+### 🔍 Quick Debug Commands
+```bash
+# Start with full debug logging
+LOG_LEVEL=DEBUG invoke dev --hot --transport=streamable-http 2>&1 | tee mcp_dev.log
+
+# Check EventBus logs
+tail -f mcp_dev.log | grep -E "EventBus|event|blinker|signal"
+
+# Test event generation
+telescope_custom_action device_id="telescope_1" action="action_start_up_sequence" parameters='{"lat": 40.745, "lon": -74.0256, "move_arm": true}'
+```
+
+---
+
+# Next Session Notes
+
 ## v0.4.0 Summary
 Successfully implemented and TESTED IoT device patterns:
 - ✅ Direct connection strings (no discovery required)

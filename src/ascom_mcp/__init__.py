@@ -12,9 +12,13 @@ Features:
 - Natural language astronomy targeting (e.g., "Point at M31")
 """
 
-__version__ = (
-    "0.3.0"  # Migrated to FastMCP for cleaner, production-ready implementation
-)
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("mcp-server-ascom")
+except PackageNotFoundError:
+    # Fallback for development when package is not installed
+    __version__ = "0.4.0"
 
 from .server_fastmcp import create_server
 

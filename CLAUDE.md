@@ -253,6 +253,36 @@ cd ../seestar_alp && python root_app.py  # Terminal 1
 python -m ascom_mcp                      # Terminal 2
 ```
 
+### Hot-Reload Development (NEW!)
+
+```bash
+# Standard development (manual restart)
+invoke dev
+
+# With hot-reload (auto-restart on file changes)
+invoke dev --hot
+
+# Hot-reload with HTTP transport (for Claude Code)
+invoke dev --hot --transport=streamable-http
+
+# The dev task automatically:
+# - Sets PYTHONPATH correctly
+# - Configures ASCOM_DIRECT_DEVICES
+# - Watches Python files for changes
+# - Restarts on modifications
+```
+
+### Version Management
+
+Version is now dynamically read from package metadata:
+```python
+# In __init__.py - no more manual version updates!
+from importlib.metadata import version
+__version__ = version("mcp-server-ascom")
+```
+
+This ensures version consistency between pyproject.toml and runtime.
+
 ## Release Process
 
 ```bash
