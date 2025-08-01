@@ -1,27 +1,30 @@
 # Test Suite Context
 
-## Testing Strategy
-- **Unit tests** (90%): Business logic, mocked devices
-- **Integration tests** (9%): FastMCP patterns, Context/ToolError
-- **E2E tests** (1%): Real workflows, simulator/hardware
+## Testing Architecture
+
+Two-layer testing approach:
+- **Unit tests** (tests/unit/): Core business logic, mocked devices
+- **MCP tests** (tests/mcp/): Protocol validation and usage patterns
 
 ## Test Structure
 ```
 tests/
-├── unit/                    # Fast, isolated tests
+├── unit/                    # Core logic tests (37 tests, all pass)
 │   ├── test_discovery_tools.py
 │   ├── test_telescope_tools.py
 │   ├── test_camera_tools.py
 │   ├── test_device_manager.py
 │   └── test_simulator_discovery.py
-├── integration/             # MCP protocol tests
-│   ├── test_fastmcp_context.py
-│   ├── test_tool_integration.py
-│   └── test_mcp_full_flow.py
-├── e2e/                     # Full system tests
-│   └── test_simulator_integration.py
-├── test_setup.py           # Alpaca/alpyca mocks
-└── conftest.py             # Shared fixtures
+├── mcp/                     # MCP protocol tests
+│   ├── test_protocol.py              # Tool/resource registration
+│   ├── test_ascom_endpoint_mapping.py # HTTP endpoint validation
+│   ├── test_ascom_compliance.py       # ASCOM standard compliance
+│   ├── test_telescope_patterns.py     # Telescope usage examples
+│   ├── test_camera_patterns.py        # Camera usage examples
+│   └── test_resource_patterns.py      # Resource access patterns
+├── conftest.py             # Shared fixtures
+├── base.py                 # Base test classes
+└── utils.py                # Test utilities
 ```
 
 ## Key Fixtures
@@ -31,8 +34,7 @@ tests/
 @pytest.fixture
 def mock_context():
     ctx = MagicMock(spec=Context)
-    ctx.logger = structlog.get_logger()
-    ctx.request_id = str(uuid.uuid4())
+    # NO ctx.logger - use direct methods!
     return ctx
 ```
 
@@ -43,78 +45,101 @@ def mock_telescope():
     telescope = MagicMock()
     # Properties are sync
     telescope.Connected = True
-    telescope.RightAscension = 5.5
+    telescope.CanSlew = True
+    telescope.Slewing = False
     # Methods are async
     telescope.SlewToCoordinatesAsync = AsyncMock()
     return telescope
 ```
 
-### `device_manager_with_simulator`
+### `mock_device_discovery` - Skip network calls
 ```python
 @pytest.fixture
-async def device_manager_with_simulator():
-    os.environ["ASCOM_SIMULATOR_DEVICES"] = "localhost:4700:seestar_simulator"
-    manager = DeviceManager()
-    await manager.initialize()
-    return manager
+def mock_device_discovery():
+    """Mock discovery to avoid network operations."""
+    # Returns pre-configured test devices
 ```
 
 ## Test Patterns
 
-### FastMCP Tool Testing
+### FastMCP 2.0 Context
 ```python
-# Unit test - underlying function
-async def test_discovery_logic(discovery_tools):
-    result = await discovery_tools.discover_devices()
-    assert result["success"] is True
+# ✅ CORRECT - Direct Context methods
+async def test_with_context(ctx: Context):
+    await ctx.info("Starting operation")
+    await ctx.debug(f"Details: {data}")
+    await ctx.error(f"Failed: {error}")
 
-# Integration test - with Context
-async def test_discovery_with_context(mock_context):
-    result = await discover_ascom_devices(mock_context, timeout=5.0)
-    mock_context.logger.info.assert_called()
+# ❌ WRONG - No ctx.logger!
+ctx.logger.info("This is wrong")
 ```
 
 ### ToolError Pattern
 ```python
-async def test_connection_error(mock_context):
-    with pytest.raises(ToolError) as exc_info:
-        await telescope_connect(mock_context, "invalid_device")
-    
-    assert exc_info.value.code == "connection_failed"
-    assert exc_info.value.recoverable is True
+raise ToolError(
+    "Device not found. Run discovery first.",
+    code="device_not_found", 
+    recoverable=True,
+    details={"suggestions": ["Try: discover_ascom_devices"]}
+)
 ```
 
-### Simulator Testing
+### Testing Layers
 ```python
-async def test_simulator_discovery(simulator_environment):
-    config = Config()
-    assert any("simulator" in name for _, _, name in config.simulator_devices)
+# Unit test - tool functions directly
+async def test_discovery_logic():
+    tools = DiscoveryTools(mock_manager)
+    result = await tools.discover_devices()
+    assert result["success"] is True
+
+# MCP test - through FastMCP Client
+async def test_discovery_through_mcp():
+    async with Client(mcp) as client:
+        result = await client.call_tool("discover_ascom_devices", {"timeout": 5.0})
+        data = json.loads(result.content[0].text)
+        assert data["success"] is True
 ```
 
 ## Running Tests
 
-**Activate venv first!**
-
 ```bash
+# Activate venv first!
 source .venv/bin/activate
 
-# All unit tests (37/37 passing)
+# Unit tests (37/37 passing ✅)
 pytest tests/unit/ -v
 
-# Integration tests
-pytest tests/integration/ -v
+# MCP protocol tests
+pytest tests/mcp/ -v
 
-# With simulator
-export ASCOM_SIMULATOR_DEVICES="localhost:4700:seestar_simulator"
-pytest tests/e2e/ -v
+# All tests
+pytest tests/ -v
 
-# Coverage report
+# With coverage
 pytest --cov=ascom_mcp --cov-report=html
+
+# Specific test
+pytest tests/unit/test_telescope_tools.py::TestTelescopeTools::test_goto_valid_coordinates -v
 ```
 
 ## Test Status
 - Unit tests: 37/37 passing ✅
-- Integration tests: FastMCP 2.0 patterns ✅
-- E2E tests: Simulator support ✅
-- Alpaca mocking: test_setup.py ✅
-- Environment detection: Auto-simulator ✅
+- MCP tests: Fixed for FastMCP Client API ✅
+- Mocking: No network calls in tests ✅
+- Fixtures: Updated for FastMCP 2.0 ✅
+
+## Common Issues
+
+### Import Errors
+- Alpaca/alpyca are mocked via test_setup.py
+- Activate venv: `source .venv/bin/activate`
+
+### Hanging Tests  
+- Use `mock_device_discovery` fixture
+- Avoid real network operations
+- Set short timeouts
+
+### FastMCP Client API
+- `list_tools()` returns Tool objects with `.name`
+- `call_tool()` result has `.content[0].text`
+- Resources have `.uri` attribute (AnyUrl type)

@@ -34,11 +34,11 @@ Core implementation of ASCOM device bridging to MCP protocol using FastMCP 2.0.
 ```python
 @mcp.tool()
 async def telescope_connect(ctx: Context, device_id: str) -> dict[str, Any]:
-    ctx.logger.info("connecting_telescope", device_id=device_id)
+    await ctx.info("connecting_telescope", device_id=device_id)
     try:
         return await telescope_tools.connect(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("telescope_connect_failed", error=str(e))
+        await ctx.error("telescope_connect_failed", error=str(e))
         raise ToolError(
             f"Cannot connect to telescope '{device_id}': {str(e)}",
             code="connection_failed",

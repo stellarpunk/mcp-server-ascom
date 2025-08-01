@@ -13,8 +13,8 @@ Control telescopes with AI. Works with any ASCOM device.
 - [Quick Start Guide](QUICKSTART.md)
 - [API Reference](docs/API.md)
 - [Development Guide](docs/development.md)
-- [Production Deployment](docs/PRODUCTION_DEPLOYMENT.md)
-- [Testing Guide](tests/README.md)
+- [Testing Strategy](docs/E2E_TESTING_GUIDE.md)
+- [Examples](examples/README.md)
 
 ## v0.3.0 Updates
 

@@ -15,7 +15,7 @@
 ### Technical Docs
 - **[Architecture](ARCHITECTURE.md)** - System design
 - **[Development](development.md)** - Contributing
-- **[Testing](testing-strategy.md)** - Test framework
+- **[Testing](E2E_TESTING_GUIDE.md)** - Test framework
 
 ## Directory Structure
 
@@ -32,7 +32,7 @@ docs/
 ├── Technical
 │   ├── ARCHITECTURE.md
 │   ├── development.md
-│   └── testing-strategy.md
+│   └── E2E_TESTING_GUIDE.md
 └── Reference
     ├── EXECUTIVE_SUMMARY.md
     └── MIGRATION_v0.3.0.md
