@@ -7,7 +7,11 @@ from datetime import datetime
 from typing import Any, Optional
 
 from aiohttp import ClientSession
-from alpyca import Camera, FilterWheel, Focuser, Telescope, discovery
+from alpaca.camera import Camera
+from alpaca.filterwheel import FilterWheel
+from alpaca.focuser import Focuser
+from alpaca.telescope import Telescope
+from alpaca import discovery
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from ..config import config
@@ -87,6 +91,7 @@ class DeviceManager:
         self._discovery_lock = asyncio.Lock()
         self._connection_lock = asyncio.Lock()
         self._state_persistence = DeviceStatePersistence()
+        self._event_callbacks: dict[str, callable] = {}
 
     async def initialize(self):
         """Initialize the device manager."""
@@ -375,6 +380,14 @@ class DeviceManager:
                 self._connected_devices[device_id] = connected
 
                 logger.info(f"Successfully connected to {device_info.name}")
+                
+                # Notify event callbacks about connection
+                if "on_device_connected" in self._event_callbacks:
+                    try:
+                        await self._event_callbacks["on_device_connected"](device_id, device_info)
+                    except Exception as e:
+                        logger.error(f"Error in device connected callback: {e}")
+                        
                 return connected
 
             except Exception as e:
@@ -408,6 +421,16 @@ class DeviceManager:
         device = self._connected_devices[device_id]
         device.update_last_used()
         return device
+        
+    def register_event_callback(self, event_name: str, callback: callable):
+        """Register a callback for device events.
+        
+        Args:
+            event_name: Name of the event (e.g., 'on_device_connected')
+            callback: Async function to call when event occurs
+        """
+        self._event_callbacks[event_name] = callback
+        logger.info(f"Registered event callback for {event_name}")
 
     async def get_device_info(self, device_id: str) -> dict[str, Any]:
         """Get information about a device."""

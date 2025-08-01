@@ -37,9 +37,8 @@ async def test_direct_connection():
     
     # Test connection strings
     connection_strings = [
-        "seestar@seestar.local:5555",
-        # Add your actual Seestar IP here:
-        # "seestar@192.168.1.100:5555",
+        "telescope_1@localhost:5555",  # seestar_alp server
+        "Seestar Alpha@localhost:5555",  # With device name
     ]
     
     for conn_str in connection_strings:

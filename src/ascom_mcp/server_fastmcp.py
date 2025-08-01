@@ -9,6 +9,7 @@ FastMCP is now the recommended approach for MCP servers in Python.
 import json
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -19,8 +20,11 @@ from . import __version__
 from .ascom_logging import StructuredLogger
 from .config import config
 from .devices.manager import DeviceManager
+from .devices.seestar_event_bridge import SeestarEventBridge
+from .resources.event_stream import EventStreamManager
 from .tools.camera import CameraTools
 from .tools.discovery import DiscoveryTools
+from .tools.events import EventTools
 from .tools.telescope import TelescopeTools
 
 # Structured logger (logs to stderr per MCP spec)
@@ -31,16 +35,19 @@ mcp = FastMCP("ASCOM MCP Server")
 
 # Global device manager (initialized at startup)
 device_manager: DeviceManager | None = None
+event_manager: EventStreamManager | None = None
+event_bridge: SeestarEventBridge | None = None
 discovery_tools: DiscoveryTools | None = None
 telescope_tools: TelescopeTools | None = None
 camera_tools: CameraTools | None = None
+event_tools: EventTools | None = None
 
 
 # Server lifecycle management
 @asynccontextmanager
 async def server_lifespan(server: FastMCP):
     """Manage server startup and shutdown."""
-    global device_manager, discovery_tools, telescope_tools, camera_tools
+    global device_manager, event_manager, event_bridge, discovery_tools, telescope_tools, camera_tools, event_tools
 
     logger.info(f"Starting ASCOM MCP Server v{__version__} (FastMCP)")
 
@@ -48,9 +55,16 @@ async def server_lifespan(server: FastMCP):
     device_manager = DeviceManager()
     await device_manager.initialize()
 
+    event_manager = EventStreamManager()
+    event_bridge = SeestarEventBridge(event_manager)
+    
+    # Register event callbacks
+    device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
+    
     discovery_tools = DiscoveryTools(device_manager)
     telescope_tools = TelescopeTools(device_manager)
     camera_tools = CameraTools(device_manager)
+    event_tools = EventTools(device_manager, event_manager)
 
     logger.info("ASCOM MCP Server initialized successfully")
 
@@ -66,11 +80,19 @@ async def server_lifespan(server: FastMCP):
 
 async def ensure_initialized():
     """Ensure all global tools are initialized."""
-    global device_manager, discovery_tools, telescope_tools, camera_tools
+    global device_manager, event_manager, event_bridge, discovery_tools, telescope_tools, camera_tools, event_tools
 
     if device_manager is None:
         device_manager = DeviceManager()
         await device_manager.initialize()
+
+    if event_manager is None:
+        event_manager = EventStreamManager()
+        
+    if event_bridge is None:
+        event_bridge = SeestarEventBridge(event_manager)
+        # Register event callbacks
+        device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
 
     if discovery_tools is None:
         discovery_tools = DiscoveryTools(device_manager)
@@ -80,6 +102,9 @@ async def ensure_initialized():
 
     if camera_tools is None:
         camera_tools = CameraTools(device_manager)
+        
+    if event_tools is None:
+        event_tools = EventTools(device_manager, event_manager)
 
 
 # Discovery tools
@@ -424,6 +449,92 @@ async def camera_get_status(ctx: Context, device_id: str) -> dict[str, Any]:
         )
 
 
+# Event tools
+@mcp.tool()
+async def get_event_history(
+    ctx: Context,
+    device_id: str,
+    count: int = 50,
+    event_types: list[str] | None = None,
+    since_timestamp: float | None = None,
+) -> dict[str, Any]:
+    """Get historical events for a device.
+
+    Args:
+        ctx: FastMCP context for logging and request metadata
+        device_id: Device identifier
+        count: Maximum number of events to return (default: 50)
+        event_types: Filter by specific event types
+        since_timestamp: Get events after this Unix timestamp
+
+    Returns:
+        Event history and metadata
+    """
+    await ensure_initialized()
+    await ctx.info(f"getting_event_history: device_id={device_id}, count={count}")
+    try:
+        return await event_tools.get_event_history(
+            device_id=device_id,
+            count=count,
+            event_types=event_types,
+            since_timestamp=since_timestamp,
+        )
+    except Exception as e:
+        await ctx.error(f"get_event_history_failed: device_id={device_id}, error={str(e)}")
+        raise ToolError(
+            f"Cannot get event history: {str(e)}",
+            code="event_history_failed",
+            recoverable=True
+        )
+
+
+@mcp.tool()
+async def clear_event_history(ctx: Context, device_id: str) -> dict[str, Any]:
+    """Clear event history for a device.
+
+    Args:
+        ctx: FastMCP context for logging and request metadata
+        device_id: Device identifier
+
+    Returns:
+        Operation result
+    """
+    await ensure_initialized()
+    await ctx.info(f"clearing_event_history: device_id={device_id}")
+    try:
+        return await event_tools.clear_event_history(device_id=device_id)
+    except Exception as e:
+        await ctx.error(f"clear_event_history_failed: device_id={device_id}, error={str(e)}")
+        raise ToolError(
+            f"Cannot clear event history: {str(e)}",
+            code="clear_history_failed",
+            recoverable=True
+        )
+
+
+@mcp.tool()
+async def get_event_types(ctx: Context) -> dict[str, Any]:
+    """Get available event types and descriptions.
+
+    Args:
+        ctx: FastMCP context for logging and request metadata
+
+    Returns:
+        Dictionary of event types and their descriptions
+    """
+    await ensure_initialized()
+    await ctx.debug("getting_event_types")
+    try:
+        return await event_tools.get_event_types()
+    except Exception as e:
+        await ctx.error(f"get_event_types_failed: error={str(e)}")
+        raise ToolError(
+            f"Cannot get event types: {str(e)}",
+            code="event_types_failed",
+            recoverable=True
+        )
+
+
 # Resources
 @mcp.resource("ascom://health")
 async def health_check() -> str:
@@ -484,6 +595,43 @@ async def get_available_devices() -> str:
         devices = await device_manager.get_available_devices()
         return json.dumps({"devices": devices}, indent=2)
     return json.dumps({"devices": []}, indent=2)
+
+
+@mcp.resource("ascom://events/{device_id}/stream")
+async def get_event_stream(device_id: str, ctx: Context) -> str:
+    """Get the current event stream for a device.
+    
+    This resource provides the latest events from an ASCOM device.
+    The resource will be automatically updated when new events arrive,
+    triggering notifications to subscribed clients.
+    
+    Args:
+        device_id: Device identifier
+        ctx: FastMCP context
+        
+    Returns:
+        JSON with current event state and recent events
+    """
+    await ensure_initialized()
+    
+    try:
+        # Get current events (last 50 by default)
+        events = await event_manager.get_events(device_id, limit=50)
+        
+        # Add server metadata
+        events["server_time"] = time.time()
+        events["resource_uri"] = f"ascom://events/{device_id}/stream"
+        
+        return json.dumps(events, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Failed to get event stream: {e}")
+        return json.dumps({
+            "device_id": device_id,
+            "status": "error",
+            "error": str(e),
+            "events": []
+        }, indent=2)
 
 
 def create_server():

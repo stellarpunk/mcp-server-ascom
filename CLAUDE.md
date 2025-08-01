@@ -24,6 +24,8 @@ Our server is a "USB cable" between MCP and ASCOM:
 ```
 Claude → MCP Protocol → Our Server → HTTP/Alpaca → seestar_alp → Telescope
          (FastMCP 2.0)    (Translation)   (ASCOM)     (Community)   (Hardware)
+             ↑                ↓
+             └── Event Stream ←── Real-time events from devices (v0.4.0)
 ```
 
 ## FastMCP 2.0 Patterns
@@ -113,6 +115,28 @@ telescope_custom_action(
 )
 ```
 
+### Event Streaming (v0.4.0+)
+```python
+# Get available event types
+get_event_types()
+# Returns: {"PiStatus": "System status", "GotoComplete": "Movement completed", ...}
+
+# Get event history
+get_event_history(
+    device_id="telescope_1",
+    count=50,
+    event_types=["PiStatus", "GotoComplete"],
+    since_timestamp=time.time() - 3600  # Last hour
+)
+
+# Read event stream resource
+# MCP clients can read: ascom://events/{device_id}/stream
+# Returns current event buffer with automatic updates
+
+# Clear event history
+clear_event_history(device_id="telescope_1")
+```
+
 ## Environment Variables (v0.4.0)
 
 ```bash
@@ -163,6 +187,19 @@ pytest --cov=ascom_mcp
 ```
 
 ## Common Issues
+
+### alpyca Import Error
+The `alpyca` package installs as module name `alpaca`:
+```python
+# WRONG:
+from alpyca import Camera  # ImportError!
+
+# CORRECT:
+from alpaca.camera import Camera
+from alpaca.telescope import Telescope
+from alpaca.filterwheel import FilterWheel
+from alpaca import discovery
+```
 
 ### "Device not found" (v0.4.0)
 Helpful error messages now guide you:
@@ -231,10 +268,13 @@ twine upload dist/*
 
 - `src/ascom_mcp/server_fastmcp.py` - Main server with all tools
 - `src/ascom_mcp/tools/` - Tool implementations
+  - `events.py` - Event history and management (NEW!)
+- `src/ascom_mcp/resources/` - MCP resources (NEW!)
+  - `event_stream.py` - Real-time event streaming
 - `src/ascom_mcp/devices/` - Device management
-  - `device_resolver.py` - Smart device ID resolution (NEW!)
-  - `state_persistence.py` - Device memory across sessions (NEW!)
-  - `seestar_event_handler.py` - Event stream handling (NEW!)
+  - `device_resolver.py` - Smart device ID resolution
+  - `state_persistence.py` - Device memory across sessions
+  - `seestar_event_bridge.py` - Seestar event integration (NEW!)
 - `tests/conftest.py` - Shared test fixtures
 - `docs/MCP_CONFIGURATION_GUIDE.md` - Complete config reference
 

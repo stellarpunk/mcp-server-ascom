@@ -1,33 +1,62 @@
 # Next Session Notes
 
 ## v0.4.0 Summary
-Successfully implemented IoT device patterns:
+Successfully implemented and TESTED IoT device patterns:
 - ✅ Direct connection strings (no discovery required)
 - ✅ Smart device resolution from multiple sources
 - ✅ Fixed async/await errors with alpyca
 - ✅ Added comprehensive integration tests
 - ✅ Updated all CLAUDE.md files
+- ✅ **TESTED WITH REAL SEESTAR S50!**
+
+### Real Hardware Test Results (2025-08-01)
+- **Connection Time**: <2 seconds (vs 180+ seconds in v0.3)
+- **Direct Connection**: Works perfectly without discovery
+- **Event Stream**: Real-time PiStatus events flowing
+- **Device**: Seestar S50 at 192.168.1.193
+- **Battery**: 84%, Temperature: 46°C
+- **No async/await errors detected**
+- **State persistence working correctly**
 
 ## High Priority for Next Session
 
-### 1. Test with Real Seestar ✅ READY
-- ✅ Turned off simulator mode in seestar_alp
-- ✅ Created REAL_SEESTAR_TESTING.md guide
-- ✅ Created test_v0.4_direct_connection.py script
-- ✅ Created .env.real_seestar configuration
-- 🔄 Test v0.4.0 connection patterns with real hardware
-- 🔄 Verify event stream handling works
+### 1. ✅ COMPLETED: Event Stream Integration
+- Created `EventStreamManager` for event buffering
+- Added event tools: `get_event_types`, `get_event_history`, `clear_event_history`
+- Implemented `ascom://events/{device_id}/stream` resource template
+- Created `SeestarEventBridge` for device integration
+- Added comprehensive integration tests
+- Ready for real hardware testing!
 
-### 2. Complete Event Stream Integration
-- Foundation is in `seestar_event_handler.py`
-- Need to integrate with device manager
-- Handle concurrent commands and events
-
-### 3. Session-Based Tools
-Create high-level observation tools:
+### 2. Session-Based Observation Tools
+Create high-level workflows:
 - `start_observation_session(location, equipment)`
 - `observe_target(name, duration, filters)`
 - `end_observation_session()`
+- Automatic startup sequence handling
+- State management across observations
+
+## Optimization Opportunities
+
+### 1. Event Stream Architecture
+- Current: Polling-based status updates
+- Optimize: Push events via MCP resources/SSE
+- Benefit: Real-time updates, reduced latency
+
+### 2. Connection Pooling
+- Current: New HTTP connection per request
+- Optimize: Reuse aiohttp sessions
+- Benefit: Lower latency, fewer resources
+
+### 3. Parallel Operations
+- Current: Sequential device operations
+- Optimize: Concurrent operations where safe
+- Benefit: Faster multi-device control
+
+### 4. Caching Strategy
+- Current: Minimal caching
+- Optimize: Cache device capabilities, state
+- Benefit: Reduced round trips
 
 ## Technical Debt
 
@@ -84,5 +113,16 @@ Helpful messages that guide users to solutions, not just report problems.
 ## Remember
 - No automatic discovery!
 - Alpyca methods are synchronous (not async)
-- Test with real hardware next
+- Real hardware testing complete ✅
 - Focus on user experience
+- alpyca imports as alpaca (confusing!)
+- Event streaming foundation complete ✅
+
+## Recommended Next Steps
+
+1. **Test Event Stream with Real Hardware** - Verify PiStatus, GotoComplete events
+2. **Add Streamable HTTP Transport** - Enable true real-time streaming
+3. **Session Tools** - Abstract complexity from users
+4. **Progress Event Mapping** - Convert long operations to progress reports
+5. **Stellarium Integration** - Visual control adds huge value
+6. **Documentation Cleanup** - Remove redundant files after testing

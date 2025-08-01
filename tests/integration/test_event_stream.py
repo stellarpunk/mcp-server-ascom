@@ -1,199 +1,104 @@
-"""Integration tests for Seestar event stream handling."""
+"""Integration tests for event stream functionality."""
 
 import asyncio
 import json
-import socket
-from unittest.mock import AsyncMock, MagicMock, patch
+import os
+import time
+from unittest.mock import patch
 
 import pytest
+from fastmcp import Client
 
-from ascom_mcp.devices.seestar_event_handler import SeestarEventHandler
-
-
-class MockSeestarConnection:
-    """Mock Seestar TCP connection that sends events."""
-    
-    def __init__(self, host="localhost", port=4700):
-        self.host = host
-        self.port = port
-        self.reader = None
-        self.writer = None
-        
-    async def connect(self):
-        """Simulate connection to Seestar."""
-        self.reader = AsyncMock()
-        self.writer = MagicMock()
-        
-    async def send_event(self, event_type: str, data: dict):
-        """Simulate receiving an event from Seestar."""
-        event = {
-            "jsonrpc": "2.0",
-            "method": event_type,
-            "params": data,
-            "Timestamp": "1234567890.123456"
-        }
-        return json.dumps(event) + "\r\n"
-        
-    async def close(self):
-        """Close mock connection."""
-        if self.writer:
-            self.writer.close()
+from ascom_mcp.server_fastmcp import create_server
 
 
 class TestEventStream:
-    """Test Seestar event stream handling."""
+    """Test event streaming from ASCOM devices."""
     
     @pytest.mark.asyncio
-    async def test_balance_sensor_events(self):
-        """Test handling BalanceSensor events."""
-        handler = SeestarEventHandler()
-        
-        # Track received events
-        received_events = []
-        
-        async def event_callback(event):
-            received_events.append(event)
+    async def test_event_types_available(self):
+        """Test that event types can be retrieved."""
+        server = create_server()
+        async with Client(server) as client:
+            result = await client.call_tool("get_event_types", {})
             
-        handler.subscribe("BalanceSensor", event_callback)
-        
-        # Simulate event
-        event_data = {
-            "x": 0.123,
-            "y": -0.045,
-            "z": 0.998
-        }
-        
-        await handler.handle_event({
-            "method": "BalanceSensor",
-            "params": event_data
-        })
-        
-        # Verify event was received
-        assert len(received_events) == 1
-        assert received_events[0]["params"] == event_data
+            data = json.loads(result.content[0].text)
+            assert data["success"] is True
+            assert "event_types" in data
+            assert "PiStatus" in data["event_types"]
+            assert "GotoComplete" in data["event_types"]
         
     @pytest.mark.asyncio
-    async def test_focuser_move_events(self):
-        """Test handling FocuserMove events during focus operations."""
-        handler = SeestarEventHandler()
-        
-        focus_positions = []
-        
-        async def focus_callback(event):
-            focus_positions.append(event["params"]["position"])
+    async def test_event_history_without_device(self):
+        """Test getting event history for non-connected device."""
+        server = create_server()
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "get_event_history",
+                {"device_id": "unknown_device"}
+            )
             
-        handler.subscribe("FocuserMove", focus_callback)
-        
-        # Simulate focus movement sequence
-        for position in [1500, 1510, 1520, 1530]:
-            await handler.handle_event({
-                "method": "FocuserMove",
-                "params": {"position": position}
-            })
-            
-        assert focus_positions == [1500, 1510, 1520, 1530]
+            data = json.loads(result.content[0].text)
+            assert data["success"] is False
+            assert "not found" in data["error"]
         
     @pytest.mark.asyncio
-    async def test_concurrent_event_handling(self):
-        """Test handling multiple event types concurrently."""
-        handler = SeestarEventHandler()
-        
-        events_by_type = {
-            "BalanceSensor": [],
-            "PiStatus": [],
-            "FocuserMove": []
-        }
-        
-        async def make_callback(event_type):
-            async def callback(event):
-                events_by_type[event_type].append(event)
-            return callback
-            
-        # Subscribe to multiple event types
-        for event_type in events_by_type:
-            callback = await make_callback(event_type)
-            handler.subscribe(event_type, callback)
-            
-        # Send mixed events
-        tasks = []
-        for i in range(10):
-            event_type = ["BalanceSensor", "PiStatus", "FocuserMove"][i % 3]
-            event = {
-                "method": event_type,
-                "params": {"index": i}
-            }
-            tasks.append(handler.handle_event(event))
-            
-        await asyncio.gather(*tasks)
-        
-        # Verify all events were handled
-        total_events = sum(len(events) for events in events_by_type.values())
-        assert total_events == 10
+    async def test_event_stream_resource(self):
+        """Test that event stream resource is available."""
+        with patch.dict(os.environ, {
+            "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50"
+        }):
+            server = create_server()
+            async with Client(server) as client:
+                # List resources and templates
+                resources = await client.list_resources()
+                resource_uris = [str(r.uri) for r in resources]
+                
+                # Get resource templates too
+                templates = await client.list_resource_templates()
+                template_uris = [str(t.uriTemplate) for t in templates]
+                
+                # Event stream should be available as a template
+                assert any("ascom://events/" in uri for uri in template_uris)
+                
+                # Read event stream for non-connected device
+                result = await client.read_resource("ascom://events/telescope_1/stream")
+                data = json.loads(result[0].text)
+                
+                assert data["device_id"] == "telescope_1"
+                assert data["status"] == "no_events"
+                assert data["events"] == []
         
     @pytest.mark.asyncio
-    async def test_event_error_handling(self):
-        """Test error handling in event callbacks."""
-        handler = SeestarEventHandler()
-        
-        call_count = 0
-        
-        async def failing_callback(event):
-            nonlocal call_count
-            call_count += 1
-            raise ValueError("Test error")
+    async def test_event_filtering(self):
+        """Test event filtering by type and time."""
+        server = create_server()
+        async with Client(server) as client:
+            # Test with event type filter
+            result = await client.call_tool(
+                "get_event_history",
+                {
+                    "device_id": "telescope_1",
+                    "event_types": ["PiStatus", "GotoComplete"],
+                    "count": 5
+                }
+            )
             
-        handler.subscribe("TestEvent", failing_callback)
-        
-        # Should not crash when callback fails
-        await handler.handle_event({
-            "method": "TestEvent",
-            "params": {}
-        })
-        
-        assert call_count == 1  # Callback was called despite error
+            data = json.loads(result.content[0].text)
+            # Should handle gracefully even if device not found
+            assert "success" in data
         
     @pytest.mark.asyncio
-    async def test_state_synchronization(self):
-        """Test maintaining state from event stream."""
-        handler = SeestarEventHandler()
-        
-        # Track device state
-        device_state = {
-            "temperature": None,
-            "focus_position": None,
-            "orientation": None
-        }
-        
-        async def update_temperature(event):
-            device_state["temperature"] = event["params"]["cpu_temp"]
+    async def test_clear_event_history(self):
+        """Test clearing event history."""
+        server = create_server()
+        async with Client(server) as client:
+            result = await client.call_tool(
+                "clear_event_history",
+                {"device_id": "telescope_1"}
+            )
             
-        async def update_focus(event):
-            device_state["focus_position"] = event["params"]["position"]
-            
-        async def update_orientation(event):
-            device_state["orientation"] = event["params"]
-            
-        handler.subscribe("PiStatus", update_temperature)
-        handler.subscribe("FocuserMove", update_focus)
-        handler.subscribe("BalanceSensor", update_orientation)
-        
-        # Simulate state updates
-        await handler.handle_event({
-            "method": "PiStatus",
-            "params": {"cpu_temp": 45.2}
-        })
-        
-        await handler.handle_event({
-            "method": "FocuserMove",
-            "params": {"position": 1520}
-        })
-        
-        await handler.handle_event({
-            "method": "BalanceSensor",
-            "params": {"x": 0.1, "y": 0.2, "z": 0.97}
-        })
-        
-        # Verify state is synchronized
-        assert device_state["temperature"] == 45.2
-        assert device_state["focus_position"] == 1520
-        assert device_state["orientation"]["z"] == 0.97
+            data = json.loads(result.content[0].text)
+            # Should fail since device not connected
+            assert data["success"] is False
+            assert "not found" in data["error"]

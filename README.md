@@ -96,6 +96,22 @@ Any ASCOM Alpaca device: telescopes, cameras, focusers, filter wheels, domes.
 - `telescope_park` - Park at home position
 - `camera_capture` - Take images
 
+## Event Streaming 🆕
+
+Real-time event streaming from ASCOM devices (especially Seestar S50):
+
+- **Event History**: `get_event_history` - Retrieve past events with filtering
+- **Event Types**: `get_event_types` - List available event types  
+- **Event Stream**: `ascom://events/{device_id}/stream` - Live event feed
+- **Clear History**: `clear_event_history` - Clear event buffer
+
+Supported event types:
+- `PiStatus` - System status (battery, temperature)
+- `GotoComplete` - Movement completed
+- `BalanceSensor` - Device orientation
+- `ViewChanged` - View state changes
+- And more...
+
 ## Development
 
 ```bash

@@ -20,7 +20,7 @@ tests/
 ├── integration/             # Real simulator tests (NEW!)
 │   ├── test_discovery_timeout.py    # Discovery performance
 │   ├── test_iot_connection_pattern.py # Direct connections
-│   ├── test_event_stream.py        # Seestar events
+│   ├── test_event_stream.py        # Event streaming (v0.4.0+)
 │   ├── test_mcp_integration.py     # Full MCP workflow
 │   └── test_observation_workflow.py # Complete sessions
 ├── mcp/                     # MCP protocol tests
@@ -145,7 +145,11 @@ pytest tests/unit/test_telescope_tools.py::TestTelescopeTools::test_goto_valid_c
 - No automatic discovery requirement
 - Direct connection strings work
 - Device state persistence tested
-- Event stream handling foundation
+- Event stream handling (v0.4.0+):
+  - Event types enumeration
+  - Event history with filtering
+  - Event stream resource templates
+  - Clear event history
 - Complete observation workflows
 
 ## Common Issues

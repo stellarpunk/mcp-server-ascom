@@ -5,7 +5,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-from fastmcp.testing import Client
+from fastmcp import Client
 
 from ascom_mcp.server_fastmcp import create_server
 
@@ -18,7 +18,7 @@ class TestIoTConnectionPattern:
         """Test connecting using direct connection string."""
         # No discovery, no pre-configuration
         with patch.dict(os.environ, {}, clear=True):
-            server = await create_server()
+            server = create_server()
             async with Client(server) as client:
                 # Should connect directly without discovery
                 result = await client.call_tool(
@@ -48,7 +48,7 @@ class TestIoTConnectionPattern:
             })
             mock_load.return_value = [stored_device]
             
-            server = await create_server()
+            server = create_server()
             async with Client(server) as client:
                 # Connect using saved device ID
                 result = await client.call_tool(
@@ -63,7 +63,7 @@ class TestIoTConnectionPattern:
     async def test_connect_without_discovery_fails_helpfully(self):
         """Test that connection without discovery gives helpful error."""
         with patch.dict(os.environ, {}, clear=True):
-            server = await create_server()
+            server = create_server()
             async with Client(server) as client:
                 # Try to connect to unknown device
                 try:
@@ -83,7 +83,7 @@ class TestIoTConnectionPattern:
     async def test_discovery_not_automatic(self):
         """Test that discovery doesn't run automatically."""
         with patch.dict(os.environ, {}, clear=True):
-            server = await create_server()
+            server = create_server()
             async with Client(server) as client:
                 # Get device list without discovery
                 result = await client.call_tool("list_devices", {})
@@ -109,7 +109,7 @@ class TestIoTConnectionPattern:
         with patch.dict(os.environ, {
             "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50"
         }):
-            server = await create_server()
+            server = create_server()
             async with Client(server) as client:
                 for device_id in test_cases:
                     # Each should work without discovery

@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-from fastmcp.testing import Client
+from fastmcp import Client
 
 from ascom_mcp.server_fastmcp import create_server
 
