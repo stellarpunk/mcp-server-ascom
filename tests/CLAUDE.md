@@ -1,20 +1,28 @@
 # Test Suite Context
 
-## Testing Architecture
+## Testing Architecture (v0.4.0)
 
-Two-layer testing approach:
+Three-layer testing approach:
 - **Unit tests** (tests/unit/): Core business logic, mocked devices
+- **Integration tests** (tests/integration/): Real simulators, IoT patterns (NEW!)
 - **MCP tests** (tests/mcp/): Protocol validation and usage patterns
 
 ## Test Structure
 ```
 tests/
-├── unit/                    # Core logic tests (37 tests, all pass)
+├── unit/                    # Core logic tests (40+ tests, all pass)
 │   ├── test_discovery_tools.py
 │   ├── test_telescope_tools.py
 │   ├── test_camera_tools.py
 │   ├── test_device_manager.py
+│   ├── test_device_resolver.py      # Device ID parsing (NEW!)
 │   └── test_simulator_discovery.py
+├── integration/             # Real simulator tests (NEW!)
+│   ├── test_discovery_timeout.py    # Discovery performance
+│   ├── test_iot_connection_pattern.py # Direct connections
+│   ├── test_event_stream.py        # Seestar events
+│   ├── test_mcp_integration.py     # Full MCP workflow
+│   └── test_observation_workflow.py # Complete sessions
 ├── mcp/                     # MCP protocol tests
 │   ├── test_protocol.py              # Tool/resource registration
 │   ├── test_ascom_endpoint_mapping.py # HTTP endpoint validation
@@ -47,8 +55,9 @@ def mock_telescope():
     telescope.Connected = True
     telescope.CanSlew = True
     telescope.Slewing = False
-    # Methods are async
-    telescope.SlewToCoordinatesAsync = AsyncMock()
+    # Methods are SYNC in alpyca (despite "Async" name!)
+    telescope.SlewToCoordinatesAsync = MagicMock()  # NOT AsyncMock!
+    telescope.Park = MagicMock()
     return telescope
 ```
 
@@ -106,8 +115,11 @@ async def test_discovery_through_mcp():
 # Activate venv first!
 source .venv/bin/activate
 
-# Unit tests (37/37 passing ✅)
+# Unit tests (40+ tests passing ✅)
 pytest tests/unit/ -v
+
+# Integration tests with simulator (NEW!)
+pytest tests/integration/ -v
 
 # MCP protocol tests
 pytest tests/mcp/ -v
@@ -122,11 +134,19 @@ pytest --cov=ascom_mcp --cov-report=html
 pytest tests/unit/test_telescope_tools.py::TestTelescopeTools::test_goto_valid_coordinates -v
 ```
 
-## Test Status
-- Unit tests: 37/37 passing ✅
+## Test Status (v0.4.0)
+- Unit tests: 40+ tests passing ✅
+- Integration tests: IoT patterns validated ✅
 - MCP tests: Fixed for FastMCP Client API ✅
-- Mocking: No network calls in tests ✅
+- Mocking: Alpyca methods are SYNC not async ✅
 - Fixtures: Updated for FastMCP 2.0 ✅
+
+## Integration Test Features
+- No automatic discovery requirement
+- Direct connection strings work
+- Device state persistence tested
+- Event stream handling foundation
+- Complete observation workflows
 
 ## Common Issues
 

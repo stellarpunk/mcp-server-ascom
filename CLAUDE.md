@@ -1,6 +1,6 @@
-# CLAUDE.md - ASCOM MCP Server
+# CLAUDE.md - ASCOM MCP Server (v0.4.0)
 
-Bridge ASCOM devices to Claude via MCP (Model Context Protocol).
+Bridge ASCOM devices to Claude via MCP. **Now with instant connections!**
 
 ## Quick Start
 
@@ -12,8 +12,9 @@ source .venv/bin/activate
 python -m ascom_mcp
 
 # Run tests
-pytest tests/unit/ -v    # Unit tests (37/37 ✅)
-pytest tests/mcp/ -v     # MCP protocol tests
+pytest tests/unit/ -v         # Unit tests (40+ passing ✅)
+pytest tests/integration/ -v  # Integration tests (NEW!)
+pytest tests/mcp/ -v          # MCP protocol tests
 ```
 
 ## Architecture
@@ -52,15 +53,18 @@ await ctx.info(f"connected: device_id={device_id}")
 await ctx.error(f"failed: {str(e)}")
 ```
 
-## Key Commands
+## Key Commands (v0.4.0 IoT Patterns)
 
-### Discovery & Connection
+### Direct Connection (No Discovery Required!)
 ```python
-# Discover devices
-discover_ascom_devices(timeout=5.0)
+# Connect instantly with connection string
+telescope_connect(device_id="seestar@192.168.1.100:5555")
 
-# Connect (use device_id from discovery)
-telescope_connect(device_id="Telescope_0")
+# Or use pre-configured device
+telescope_connect(device_id="telescope_1")
+
+# Discovery only when adding new devices
+discover_ascom_devices(timeout=5.0)  # Optional!
 
 # Initialize telescope (CRITICAL for Seestar!)
 telescope_custom_action(
@@ -109,10 +113,13 @@ telescope_custom_action(
 )
 ```
 
-## Environment Variables
+## Environment Variables (v0.4.0)
 
 ```bash
-# Skip discovery with known devices
+# Pre-configure devices for instant access
+export ASCOM_DIRECT_DEVICES="telescope_1:localhost:5555:Seestar S50,telescope_99:localhost:4700:Simulator"
+
+# Known devices (checked if device_id not found)
 export ASCOM_KNOWN_DEVICES="localhost:5555:seestar_alp"
 
 # Use simulator
@@ -120,21 +127,26 @@ export ASCOM_SIMULATOR_DEVICES="localhost:4700:seestar_simulator"
 
 # Debug logging
 export LOG_LEVEL=DEBUG
-
-# Discovery timeout
-export ASCOM_DISCOVERY_TIMEOUT=10
 ```
+
+### Removed in v0.4.0:
+- ❌ `ASCOM_SKIP_UDP_DISCOVERY` - No longer needed!
+- ❌ `ASCOM_PREPOPULATE_KNOWN` - Devices resolved on-demand
 
 ## Testing
 
 ### Test Structure
 ```
 tests/
-├── unit/     # Core logic (37 tests, all pass)
-├── mcp/      # Protocol validation
+├── unit/          # Core logic (40+ tests, all pass)
+├── integration/   # Real simulator tests (NEW!)
+│   ├── test_discovery_timeout.py      # Discovery optimization
+│   ├── test_iot_connection_pattern.py # Direct connections
+│   ├── test_event_stream.py          # Seestar events
+│   └── test_observation_workflow.py   # Complete sessions
+├── mcp/          # Protocol validation
 │   ├── test_protocol.py              # Basic MCP tests
 │   ├── test_ascom_endpoint_mapping.py # HTTP mapping
-│   ├── test_ascom_compliance.py       # ASCOM standards
 │   └── test_*_patterns.py            # Usage examples
 ```
 
@@ -152,10 +164,24 @@ pytest --cov=ascom_mcp
 
 ## Common Issues
 
-### "Device not found"
-- Run `discover_ascom_devices` first
-- Check seestar_alp is running: `cd ../seestar_alp && python root_app.py`
-- Verify ports: Backend API on 5555
+### "Device not found" (v0.4.0)
+Helpful error messages now guide you:
+1. Use direct connection: `telescope_connect device_id="seestar@host:port"`
+2. Add to ASCOM_DIRECT_DEVICES environment
+3. Run discovery (only if needed): `discover_ascom_devices`
+
+### Connection Examples
+```python
+# Direct connection (no setup)
+telescope_connect(device_id="seestar@192.168.1.100:5555")
+
+# Pre-configured
+telescope_connect(device_id="telescope_1")  # From ASCOM_DIRECT_DEVICES
+
+# After discovery
+discover_ascom_devices()  # Only needed once!
+telescope_connect(device_id="telescope_0")
+```
 
 ### Tests hanging
 - MCP tests use mocked discovery - no network calls
@@ -206,8 +232,11 @@ twine upload dist/*
 - `src/ascom_mcp/server_fastmcp.py` - Main server with all tools
 - `src/ascom_mcp/tools/` - Tool implementations
 - `src/ascom_mcp/devices/` - Device management
+  - `device_resolver.py` - Smart device ID resolution (NEW!)
+  - `state_persistence.py` - Device memory across sessions (NEW!)
+  - `seestar_event_handler.py` - Event stream handling (NEW!)
 - `tests/conftest.py` - Shared test fixtures
-- `.multitailrc` - Log monitoring config
+- `docs/MCP_CONFIGURATION_GUIDE.md` - Complete config reference
 
 ## Documentation
 
