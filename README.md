@@ -40,6 +40,10 @@ pip install mcp-server-ascom
 uvx mcp-server-ascom
 ```
 
+### ⚠️ Important: Fix Slow Discovery (v0.3.0)
+
+Discovery can take 2+ minutes. To fix this, add `ASCOM_SKIP_UDP_DISCOVERY` to your config (see below).
+
 ## Claude Desktop Setup
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -48,7 +52,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "ascom": {
       "command": "uvx",
-      "args": ["mcp-server-ascom"]
+      "args": ["mcp-server-ascom"],
+      "env": {
+        "ASCOM_SKIP_UDP_DISCOVERY": "true",
+        "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50,telescope_99:localhost:4700:Simulator"
+      }
     }
   }
 }

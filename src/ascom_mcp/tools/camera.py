@@ -103,7 +103,7 @@ class CameraTools:
             )
 
             # Start exposure
-            await camera.StartExposure(exposure_seconds, light_frame)
+            camera.StartExposure(exposure_seconds, light_frame)
 
             # Wait for exposure to complete
             start_time = datetime.now(timezone.utc)

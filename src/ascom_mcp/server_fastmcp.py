@@ -293,7 +293,7 @@ async def telescope_park(ctx: Context, device_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def telescope_custom_action(
-    ctx: Context, device_id: str, action: str, parameters: dict[str, Any] | None = None
+    ctx: Context, device_id: str, action: str, parameters: str | dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """Execute custom ASCOM action (e.g., Seestar-specific commands).
 
@@ -301,7 +301,7 @@ async def telescope_custom_action(
         ctx: FastMCP context for logging and request metadata
         device_id: Connected telescope device ID
         action: Action name (e.g., 'method_sync', 'goto_preset')
-        parameters: Action parameters (varies by action)
+        parameters: Action parameters as JSON string or dict (varies by action)
 
     Returns:
         Action result dictionary
@@ -309,15 +309,29 @@ async def telescope_custom_action(
     Examples:
         # Seestar focus control
         telescope_custom_action(device_id, "method_sync",
-            {"method": "get_focuser_position"})
+            '{"method": "get_focuser_position"}')
 
         # Seestar movement
         telescope_custom_action(device_id, "method_sync",
-            {"method": "scope_speed_move",
-             "params": {"speed": 300, "angle": 90, "dur_sec": 3}})
+            '{"method": "scope_speed_move", "params": {"speed": 300, "angle": 90, "dur_sec": 3}}')
     """
     await ensure_initialized()
     await ctx.info(f"telescope_custom_action: device_id={device_id}, action={action}")
+    
+    # Handle string parameters (workaround for MCP/Claude JSON serialization issue)
+    if isinstance(parameters, str):
+        try:
+            import json
+            parameters = json.loads(parameters)
+            await ctx.debug("Parsed string parameters to dict")
+        except json.JSONDecodeError as e:
+            await ctx.error(f"Invalid JSON in parameters: {e}")
+            raise ToolError(
+                f"Invalid JSON in parameters: {e}",
+                code="invalid_json",
+                recoverable=True
+            )
+    
     try:
         return await telescope_tools.custom_action(
             device_id=device_id, action=action, parameters=parameters

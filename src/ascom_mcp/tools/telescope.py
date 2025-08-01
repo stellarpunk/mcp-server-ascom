@@ -82,7 +82,7 @@ class TelescopeTools(BaseDeviceTools):
             # Park if possible and not already parked
             if telescope.CanPark and not telescope.AtPark:
                 logger.info("Parking telescope before disconnect")
-                await telescope.Park()
+                telescope.Park()
 
             # Disconnect
             await self.device_manager.disconnect_device(device_id)
@@ -130,8 +130,8 @@ class TelescopeTools(BaseDeviceTools):
 
             logger.info(f"Slewing telescope to RA={ra}h, Dec={dec}°")
 
-            # Perform async slew
-            await telescope.SlewToCoordinatesAsync(ra, dec)
+            # Perform async slew (returns immediately)
+            telescope.SlewToCoordinatesAsync(ra, dec)
 
             # Get initial status
             status = {
@@ -331,7 +331,7 @@ class TelescopeTools(BaseDeviceTools):
             logger.info("Parking telescope")
 
             # Park telescope
-            await telescope.Park()
+            telescope.Park()
 
             return {
                 "success": True,

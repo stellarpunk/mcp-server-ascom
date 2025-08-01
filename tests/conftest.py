@@ -39,15 +39,14 @@ def mock_telescope():
     telescope.DriverVersion = "1.0"
     telescope.InterfaceVersion = 3
     
-    # Methods (asynchronous) - need AsyncMock
-    from unittest.mock import AsyncMock
-    telescope.Park = AsyncMock()
-    telescope.Unpark = AsyncMock()
-    telescope.SlewToCoordinatesAsync = AsyncMock()
-    telescope.SlewToCoordinates = AsyncMock()
-    telescope.AbortSlew = AsyncMock()
-    telescope.FindHome = AsyncMock()
-    telescope.SetTracking = AsyncMock()
+    # Methods (synchronous - alpyca uses synchronous methods)
+    telescope.Park = MagicMock()
+    telescope.Unpark = MagicMock()
+    telescope.SlewToCoordinatesAsync = MagicMock()  # Despite name, this is sync in alpyca
+    telescope.SlewToCoordinates = MagicMock()
+    telescope.AbortSlew = MagicMock()
+    telescope.FindHome = MagicMock()
+    telescope.SetTracking = MagicMock()
     
     return telescope
 
@@ -80,12 +79,11 @@ def mock_camera():
     camera.Description = "Mock Camera"
     camera.DriverInfo = "Mock Camera Driver v1.0"
     
-    # Methods (asynchronous) - need AsyncMock
-    from unittest.mock import AsyncMock
-    camera.StartExposure = AsyncMock()
-    camera.StopExposure = AsyncMock()
-    camera.AbortExposure = AsyncMock()
-    camera.ImageArray = AsyncMock(return_value=[[0] * 100] * 100)
+    # Methods (synchronous - alpyca uses synchronous methods)
+    camera.StartExposure = MagicMock()
+    camera.StopExposure = MagicMock()
+    camera.AbortExposure = MagicMock()
+    camera.ImageArray = MagicMock(return_value=[[0] * 100] * 100)
     
     return camera
 
