@@ -40,9 +40,13 @@ pip install mcp-server-ascom
 uvx mcp-server-ascom
 ```
 
-### ⚠️ Important: Fix Slow Discovery (v0.3.0)
+### 🚀 v0.4.0: Instant Connections!
 
-Discovery can take 2+ minutes. To fix this, add `ASCOM_SKIP_UDP_DISCOVERY` to your config (see below).
+No more waiting! Connect directly without discovery:
+```bash
+# Direct connection - no setup required!
+telescope_connect device_id="seestar@192.168.1.100:5555"
+```
 
 ## Claude Desktop Setup
 
@@ -54,8 +58,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "uvx",
       "args": ["mcp-server-ascom"],
       "env": {
-        "ASCOM_SKIP_UDP_DISCOVERY": "true",
-        "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50,telescope_99:localhost:4700:Simulator"
+        "ASCOM_DIRECT_DEVICES": "telescope_1:localhost:5555:Seestar S50"
       }
     }
   }
@@ -66,12 +69,19 @@ Restart Claude Desktop to activate.
 
 ## Usage
 
+### Quick Connect (No Configuration)
 ```
-You: Connect to my telescope
-AI: Found Seestar S50. Connected.
+You: Connect to seestar@192.168.1.100:5555
+AI: Connected to Seestar S50!
 
-You: Point at the Orion Nebula
+You: Point at the Orion Nebula  
 AI: Slewing to M42... Done.
+```
+
+### With Pre-Configured Devices
+```
+You: Connect to telescope_1
+AI: Connected to Seestar S50!
 ```
 
 ## Supported Equipment
