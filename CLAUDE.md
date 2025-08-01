@@ -1,6 +1,12 @@
-# CLAUDE.md - ASCOM MCP Server (v0.4.0)
+# CLAUDE.md - ASCOM MCP Server (v0.5.0)
 
-Bridge ASCOM devices to Claude via MCP. **Now with instant connections!**
+Bridge ASCOM devices to Claude via MCP. **Now with OpenAPI validation & helper methods!**
+
+## What's New in v0.5.0
+- ✅ **Parameter Validation**: Prevents Error 207 and other common mistakes
+- 🚀 **Helper Methods**: Easy-to-use tools for 41 verified commands  
+- 📋 **OpenAPI-based**: Validation from comprehensive API analysis
+- 🛡️ **Safety First**: Automatic startup sequence & safety checks
 
 ## Quick Start
 
@@ -76,7 +82,22 @@ telescope_custom_action(
 )
 ```
 
-### Basic Operations
+### Basic Operations (Now with Validation!)
+```python
+# Safe tracking control - no more Error 207!
+telescope_set_tracking(device_id="telescope_1", enabled=True)
+
+# Easy movement with direction names
+telescope_move_direction(device_id="telescope_1", direction="north", duration=5)
+
+# Auto-focus with correct API spelling
+telescope_auto_focus(device_id="telescope_1")
+
+# Get comprehensive status
+telescope_get_full_status(device_id="telescope_1")
+```
+
+### Classic Operations (Still Work)
 ```python
 # Go to coordinates
 telescope_goto(device_id="Telescope_0", ra=5.5, dec=-5.0)

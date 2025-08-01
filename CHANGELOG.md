@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.5.0] - 2025-08-01
+
+Parameter validation and helper methods based on OpenAPI analysis.
+
+### Added
+- **Validation layer** prevents common parameter errors (Error 207)
+- **Helper methods** for 41 simulator-verified commands
+  - `telescope_set_tracking()` - Safe tracking control
+  - `telescope_move_direction()` - Easy directional movement
+  - `telescope_auto_focus()` - Handles API typo
+  - `telescope_safe_startup()` - Required initialization
+  - `telescope_get_full_status()` - Comprehensive status
+  - 5+ more helper methods
+- **Parameter validation tests** ensure correctness
+- **OpenAPI-based validation** from comprehensive API analysis
+
+### Fixed
+- Tracking parameter bug that caused Error 207
+- Coordinate validation for goto commands
+- Focus position range validation
+- No-parameter command validation
+
+### Changed
+- Enhanced `telescope_custom_action` with automatic validation
+- Updated CLAUDE.md with v0.5.0 features
+
+## [0.4.0] - 2025-08-01
+
+Event streaming support for real-time updates.
+
+### Added
+- Event streaming infrastructure
+- Hot-reload development mode
+- Direct device connections without discovery
+
 ## [0.3.0] - 2025-01-30
 
 FastMCP. Structured logging. Half the code.

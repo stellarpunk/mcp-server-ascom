@@ -359,6 +359,37 @@ async def telescope_custom_action(
                 recoverable=True
             )
     
+    # NEW: Validate Seestar commands based on OpenAPI findings
+    if action == "method_sync" and isinstance(parameters, dict):
+        method = parameters.get("method")
+        if method:
+            try:
+                from .validation import SeestarValidator, ValidationError
+                
+                # Validate parameters against known formats
+                validated = SeestarValidator.validate_command(
+                    method, 
+                    parameters.get("params")
+                )
+                
+                # Update parameters with validated version
+                parameters = validated
+                await ctx.debug(f"Validated command: {method}")
+                
+            except ValidationError as e:
+                # Provide helpful error message with correct format
+                await ctx.error(f"Parameter validation failed: {e}")
+                raise ToolError(
+                    str(e),
+                    code="invalid_parameters",
+                    recoverable=True,
+                    details={
+                        "method": method,
+                        "correct_format": e.correct_format,
+                        "hint": "Check parameter format in documentation"
+                    }
+                )
+    
     try:
         return await telescope_tools.custom_action(
             device_id=device_id, action=action, parameters=parameters
