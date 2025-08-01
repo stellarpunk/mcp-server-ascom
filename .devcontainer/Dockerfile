@@ -37,6 +37,36 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     fi && \
     uv pip install pip  # Add pip for devcontainer compatibility
 
+# Install development dependencies including Playwright
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -e ".[dev]" && \
+    uv pip install pytest-playwright playwright
+
+# Install Playwright dependencies and browsers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libatspi2.0-0 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxcb1 \
+    libxkbcommon0 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && playwright install chromium --with-deps
+
 # Copy remaining files
 COPY . .
 # Install the package in development mode
@@ -48,11 +78,15 @@ FROM python:3.12-slim AS runtime
 # Copy UV from official image for devcontainer support
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-# Install runtime dependencies
+# Install runtime dependencies and debugging tools
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    multitail \
+    jq \
+    netcat-openbsd \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -66,6 +100,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application
 WORKDIR /app
 COPY --from=builder /app /app
+
+# Copy multitail configuration
+COPY .multitailrc /home/mcp/.multitailrc
+RUN chown mcp:mcp /home/mcp/.multitailrc
 
 # Switch to non-root user
 USER mcp

@@ -243,6 +243,66 @@ def mock_simulator_device():
 
 
 @pytest.fixture
+def mock_device_discovery():
+    """Mock device discovery for MCP tests."""
+    from unittest.mock import patch, AsyncMock
+    from ascom_mcp.devices.manager import DeviceInfo
+    
+    mock_devices = [
+        DeviceInfo({
+            "DeviceName": "Test Telescope",
+            "DeviceType": "Telescope", 
+            "DeviceNumber": 0,
+            "UniqueID": "test-telescope-001",
+            "Host": "localhost",
+            "Port": 11111,
+            "ApiVersion": 1
+        }),
+        DeviceInfo({
+            "DeviceName": "Test Camera",
+            "DeviceType": "Camera",
+            "DeviceNumber": 0,
+            "UniqueID": "test-camera-001",
+            "Host": "localhost",
+            "Port": 11111,
+            "ApiVersion": 1
+        })
+    ]
+    
+    # Mock discover_devices to return test devices
+    with patch('ascom_mcp.devices.manager.DeviceManager.discover_devices', AsyncMock(return_value=mock_devices)):
+        # Also add the devices to available devices
+        with patch('ascom_mcp.devices.manager.DeviceManager._available_devices', {d.id: d for d in mock_devices}):
+            yield mock_devices
+
+
+@pytest.fixture
+def mock_connected_telescope(mock_telescope, mock_device_discovery):
+    """Mock a connected telescope for MCP tests."""
+    from unittest.mock import patch, MagicMock
+    from ascom_mcp.devices.manager import ConnectedDevice, DeviceInfo
+    
+    device_info = DeviceInfo({
+        "DeviceName": "Test Telescope",
+        "DeviceType": "Telescope",
+        "DeviceNumber": 0,
+        "UniqueID": "test-telescope-001",
+        "Host": "localhost", 
+        "Port": 11111,
+        "ApiVersion": 1
+    })
+    
+    connected_device = MagicMock()
+    connected_device.info = device_info
+    connected_device.client = mock_telescope
+    connected_device.number = 0
+    
+    with patch('ascom_mcp.devices.manager.DeviceManager.get_connected_device', return_value=connected_device):
+        with patch('ascom_mcp.devices.manager.DeviceManager._connected_devices', {"Telescope_0": connected_device}):
+            yield connected_device
+
+
+@pytest.fixture
 async def device_manager_with_simulator(mock_telescope):
     """Create device manager configured for simulator."""
     from ascom_mcp.devices.manager import DeviceManager, DeviceInfo

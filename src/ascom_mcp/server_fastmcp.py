@@ -96,13 +96,13 @@ async def discover_ascom_devices(ctx: Context, timeout: float = 5.0) -> dict[str
     """
     await ensure_initialized()
 
-    ctx.logger.debug("tool_called", tool="discover_ascom_devices", timeout=timeout)
+    await ctx.debug(f"tool_called: discover_ascom_devices with timeout={timeout}")
     try:
         result = await discovery_tools.discover_devices(timeout=timeout)
-        ctx.logger.info("devices_discovered", count=result.get("count", 0))
+        await ctx.info(f"devices_discovered: count={result.get('count', 0)}")
         return result
     except Exception as e:
-        ctx.logger.error("discovery_failed", error=str(e))
+        await ctx.error(f"discovery_failed: {str(e)}")
         raise ToolError(
             f"Device discovery failed: {str(e)}",
             code="discovery_failed",
@@ -123,11 +123,11 @@ async def get_device_info(ctx: Context, device_id: str) -> dict[str, Any]:
         Device information dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("getting_device_info", device_id=device_id)
+    await ctx.info(f"getting_device_info: device_id={device_id}")
     try:
         return await discovery_tools.get_device_info(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("device_info_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"device_info_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot get info for device '{device_id}': {str(e)}",
             code="device_not_found",
@@ -148,11 +148,11 @@ async def telescope_connect(ctx: Context, device_id: str) -> dict[str, Any]:
         Connection status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("connecting_telescope", device_id=device_id)
+    await ctx.info(f"connecting_telescope: device_id={device_id}")
     try:
         return await telescope_tools.connect(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("telescope_connect_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"telescope_connect_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot connect to telescope '{device_id}': {str(e)}",
             code="connection_failed",
@@ -177,11 +177,11 @@ async def telescope_disconnect(ctx: Context, device_id: str) -> dict[str, Any]:
         Disconnection status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("disconnecting_telescope", device_id=device_id)
+    await ctx.info(f"disconnecting_telescope: device_id={device_id}")
     try:
         return await telescope_tools.disconnect(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("telescope_disconnect_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"telescope_disconnect_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot disconnect telescope '{device_id}': {str(e)}",
             code="disconnect_failed",
@@ -203,11 +203,11 @@ async def telescope_goto(ctx: Context, device_id: str, ra: float, dec: float) ->
         Slew status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("telescope_goto", device_id=device_id, ra=ra, dec=dec)
+    await ctx.info(f"telescope_goto: device_id={device_id}, ra={ra}, dec={dec}")
     try:
         return await telescope_tools.goto(device_id=device_id, ra=ra, dec=dec)
     except Exception as e:
-        ctx.logger.error("telescope_goto_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"telescope_goto_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot slew telescope: {str(e)}",
             code="slew_failed",
@@ -228,13 +228,13 @@ async def telescope_goto_object(ctx: Context, device_id: str, object_name: str) 
         Slew status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("telescope_goto_object", device_id=device_id, object=object_name)
+    await ctx.info(f"telescope_goto_object: device_id={device_id}, object={object_name}")
     try:
         return await telescope_tools.goto_object(
             device_id=device_id, object_name=object_name
         )
     except Exception as e:
-        ctx.logger.error("telescope_goto_object_failed", device_id=device_id, object=object_name, error=str(e))
+        await ctx.error(f"telescope_goto_object_failed: device_id={device_id}, object={object_name}, error={str(e)}")
         raise ToolError(
             f"Cannot slew to object '{object_name}': {str(e)}",
             code="object_lookup_failed",
@@ -255,11 +255,11 @@ async def telescope_get_position(ctx: Context, device_id: str) -> dict[str, Any]
         Position information dictionary
     """
     await ensure_initialized()
-    ctx.logger.debug("getting_telescope_position", device_id=device_id)
+    await ctx.debug(f"getting_telescope_position: device_id={device_id}")
     try:
         return await telescope_tools.get_position(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("get_position_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"get_position_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot get telescope position: {str(e)}",
             code="position_read_failed",
@@ -279,11 +279,11 @@ async def telescope_park(ctx: Context, device_id: str) -> dict[str, Any]:
         Park status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("parking_telescope", device_id=device_id)
+    await ctx.info(f"parking_telescope: device_id={device_id}")
     try:
         return await telescope_tools.park(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("telescope_park_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"telescope_park_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot park telescope: {str(e)}",
             code="park_failed",
@@ -317,13 +317,13 @@ async def telescope_custom_action(
              "params": {"speed": 300, "angle": 90, "dur_sec": 3}})
     """
     await ensure_initialized()
-    ctx.logger.info("telescope_custom_action", device_id=device_id, action=action)
+    await ctx.info(f"telescope_custom_action: device_id={device_id}, action={action}")
     try:
         return await telescope_tools.custom_action(
             device_id=device_id, action=action, parameters=parameters
         )
     except Exception as e:
-        ctx.logger.error("custom_action_failed", device_id=device_id, action=action, error=str(e))
+        await ctx.error(f"custom_action_failed: device_id={device_id}, action={action}, error={str(e)}")
         raise ToolError(
             f"Custom action '{action}' failed: {str(e)}",
             code="custom_action_failed",
@@ -344,11 +344,11 @@ async def camera_connect(ctx: Context, device_id: str) -> dict[str, Any]:
         Connection status dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("connecting_camera", device_id=device_id)
+    await ctx.info(f"connecting_camera: device_id={device_id}")
     try:
         return await camera_tools.connect(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("camera_connect_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"camera_connect_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot connect to camera '{device_id}': {str(e)}",
             code="connection_failed",
@@ -372,13 +372,13 @@ async def camera_capture(
         Capture result dictionary
     """
     await ensure_initialized()
-    ctx.logger.info("camera_capture", device_id=device_id, exposure=exposure_seconds, light_frame=light_frame)
+    await ctx.info(f"camera_capture: device_id={device_id}, exposure={exposure_seconds}, light_frame={light_frame}")
     try:
         return await camera_tools.capture(
             device_id=device_id, exposure_seconds=exposure_seconds, light_frame=light_frame
         )
     except Exception as e:
-        ctx.logger.error("camera_capture_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"camera_capture_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Camera capture failed: {str(e)}",
             code="capture_failed",
@@ -398,11 +398,11 @@ async def camera_get_status(ctx: Context, device_id: str) -> dict[str, Any]:
         Camera status dictionary
     """
     await ensure_initialized()
-    ctx.logger.debug("getting_camera_status", device_id=device_id)
+    await ctx.debug(f"getting_camera_status: device_id={device_id}")
     try:
         return await camera_tools.get_status(device_id=device_id)
     except Exception as e:
-        ctx.logger.error("camera_status_failed", device_id=device_id, error=str(e))
+        await ctx.error(f"camera_status_failed: device_id={device_id}, error={str(e)}")
         raise ToolError(
             f"Cannot get camera status: {str(e)}",
             code="status_read_failed",

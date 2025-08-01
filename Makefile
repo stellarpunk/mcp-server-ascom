@@ -12,7 +12,7 @@ else
     VENV_EXISTS := 1
 endif
 
-.PHONY: help install test test-critical test-integration lint format build clean release check-release
+.PHONY: help install test test-critical test-integration test-e2e test-e2e-basic test-e2e-performance test-e2e-protocol lint format build clean release check-release
 
 help:
 	@echo "ASCOM MCP Server Development Commands"
@@ -21,6 +21,10 @@ help:
 	@echo "make install       - Install package in development mode"
 	@echo "make test          - Run all tests"
 	@echo "make test-critical - Run critical integration tests only"
+	@echo "make test-e2e      - Run comprehensive E2E tests"
+	@echo "make test-e2e-basic - Run basic E2E workflow tests"
+	@echo "make test-e2e-protocol - Run MCP protocol compliance tests"
+	@echo "make test-e2e-performance - Run performance and load tests"
 	@echo "make lint          - Run code linting"
 	@echo "make format        - Auto-format code"
 	@echo "make build         - Build distribution packages"
@@ -53,6 +57,22 @@ test-critical: check-venv
 
 test-integration: check-venv
 	$(PYTHON) -m pytest tests/integration/ -v
+
+test-e2e: check-venv
+	@echo "Running comprehensive E2E tests..."
+	./scripts/run_e2e_tests.sh all
+
+test-e2e-basic: check-venv
+	@echo "Running basic E2E workflow tests..."
+	./scripts/run_e2e_tests.sh basic
+
+test-e2e-protocol: check-venv
+	@echo "Running MCP protocol compliance tests..."	
+	./scripts/run_e2e_tests.sh protocol
+
+test-e2e-performance: check-venv
+	@echo "Running performance and load tests..."
+	./scripts/run_e2e_tests.sh performance
 
 lint: check-venv
 	$(PYTHON) -m ruff check .

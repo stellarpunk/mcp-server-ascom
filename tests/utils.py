@@ -6,9 +6,11 @@ import os
 import subprocess
 import sys
 import time
+import select
+import platform
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
 import pytest
@@ -268,3 +270,147 @@ def requires_seestar(test_func):
 def slow_test(test_func):
     """Mark test as slow."""
     return pytest.mark.slow(test_func)
+
+
+class StdioTestHelper:
+    """Helper for robust stdio testing with subprocess.Popen."""
+    
+    @staticmethod
+    def send_json_rpc_message(proc: subprocess.Popen, message: dict):
+        """Send JSON-RPC message to subprocess via stdin."""
+        content = json.dumps(message)
+        header = f"Content-Length: {len(content)}\r\n\r\n"
+        full_message = (header + content).encode('utf-8')
+        proc.stdin.write(full_message)
+        proc.stdin.flush()
+    
+    @staticmethod
+    def read_json_rpc_response(proc: subprocess.Popen, timeout: float = 10.0) -> dict:
+        """Read JSON-RPC response from subprocess with robust timeout handling."""
+        import select
+        import sys
+        
+        start_time = time.time()
+        headers = b""
+        
+        # Read headers with proper timeout and EOF handling
+        while b"\r\n\r\n" not in headers:
+            if time.time() - start_time > timeout:
+                # Collect stderr for debugging
+                stderr_data = b""
+                if proc.stderr:
+                    try:
+                        stderr_data = proc.stderr.read()
+                    except:
+                        pass
+                raise TimeoutError(f"Header read timeout after {timeout}s. Process exit code: {proc.poll()}. Stderr: {stderr_data.decode('utf-8', errors='ignore')}")
+            
+            # Use select on Unix systems for non-blocking check
+            if sys.platform != "win32":
+                ready, _, _ = select.select([proc.stdout], [], [], 0.1)
+                if not ready:
+                    # Check if process is still alive
+                    if proc.poll() is not None:
+                        stderr_data = proc.stderr.read() if proc.stderr else b""
+                        raise EOFError(f"Process terminated with exit code {proc.returncode}. Stderr: {stderr_data.decode('utf-8', errors='ignore')}")
+                    continue
+            
+            # Read a chunk of data
+            try:
+                chunk = proc.stdout.read(1)
+            except Exception as e:
+                raise IOError(f"Failed to read from subprocess: {e}")
+                
+            if not chunk:
+                # EOF - check if process terminated
+                if proc.poll() is not None:
+                    stderr_data = proc.stderr.read() if proc.stderr else b""
+                    raise EOFError(f"Process terminated unexpectedly with exit code {proc.returncode}. Stderr: {stderr_data.decode('utf-8', errors='ignore')}")
+                # On Windows, empty read doesn't mean EOF, just no data available
+                if sys.platform == "win32":
+                    time.sleep(0.01)
+                continue
+                
+            headers += chunk
+        
+        # Parse Content-Length
+        header_text = headers.decode('utf-8')
+        content_length = None
+        for line in header_text.split('\r\n'):
+            if line.startswith('Content-Length:'):
+                try:
+                    content_length = int(line.split(':', 1)[1].strip())
+                    break
+                except (ValueError, IndexError) as e:
+                    raise ValueError(f"Invalid Content-Length header: {line}. Error: {e}")
+        
+        if content_length is None:
+            raise ValueError(f"No Content-Length header found in headers: {header_text}")
+        
+        if content_length <= 0:
+            raise ValueError(f"Invalid content length: {content_length}")
+        
+        # Read body with timeout
+        body = b""
+        while len(body) < content_length:
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Body read timeout after {timeout}s. Read {len(body)}/{content_length} bytes")
+            
+            # Calculate how much more to read
+            remaining = content_length - len(body)
+            chunk_size = min(remaining, 4096)  # Read in larger chunks for efficiency
+            
+            # Use select on Unix systems
+            if sys.platform != "win32":
+                ready, _, _ = select.select([proc.stdout], [], [], 0.1)
+                if not ready:
+                    if proc.poll() is not None:
+                        raise EOFError(f"Process terminated while reading body")
+                    continue
+            
+            try:
+                chunk = proc.stdout.read(chunk_size)
+            except Exception as e:
+                raise IOError(f"Failed to read body from subprocess: {e}")
+                
+            if not chunk:
+                if proc.poll() is not None:
+                    raise EOFError(f"Process terminated while reading body")
+                if sys.platform == "win32":
+                    time.sleep(0.01)
+                continue
+                
+            body += chunk
+        
+        # Parse JSON response
+        try:
+            return json.loads(body.decode('utf-8'))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON response: {body.decode('utf-8', errors='ignore')}. Error: {e}")
+    
+    @staticmethod
+    def create_test_process(timeout_startup: float = 2.0) -> subprocess.Popen:
+        """Create a test subprocess with proper error handling."""
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "ascom_mcp"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=False,
+            bufsize=0  # Unbuffered for real-time communication
+        )
+        
+        # Give server time to start
+        time.sleep(timeout_startup)
+        
+        # Check if it started successfully
+        if proc.poll() is not None:
+            stderr_data = proc.stderr.read() if proc.stderr else b""
+            stdout_data = proc.stdout.read() if proc.stdout else b""
+            raise RuntimeError(
+                f"Server failed to start. Exit code: {proc.returncode}. "
+                f"Stderr: {stderr_data.decode('utf-8', errors='ignore')}. "
+                f"Stdout: {stdout_data.decode('utf-8', errors='ignore')}"
+            )
+        
+        return proc
