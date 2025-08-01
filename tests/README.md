@@ -150,6 +150,9 @@ raise ToolError(
 ## Environment Variables
 
 ```bash
+# v0.4.0 Direct device configuration (no discovery needed!)
+export ASCOM_DIRECT_DEVICES="telescope_1:seestar.local:5555:Seestar S50"
+
 # Known devices (skip discovery)
 export ASCOM_KNOWN_DEVICES="localhost:5555:seestar_alp"
 
@@ -159,7 +162,7 @@ export ASCOM_SIMULATOR_DEVICES="localhost:4700:seestar_simulator"
 # Debug logging
 export LOG_LEVEL=DEBUG
 
-# Discovery timeout
+# Discovery timeout (only when discovery is used)
 export ASCOM_DISCOVERY_TIMEOUT=10
 ```
 

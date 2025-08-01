@@ -51,6 +51,7 @@ pytest tests/integration/ -v
 - FastMCP 2.0 patterns (Context, ToolError)
 - Can run against simulator or real hardware
 - Default: simulator mode
+- **v0.4.0**: IoT connection patterns, direct connections
 
 ### 3. E2E Tests (Configurable)
 ```bash
@@ -236,11 +237,17 @@ pytest tests/e2e/ -v           # End-to-end tests
 export ASCOM_TEST_MODE=hardware
 export SEESTAR_IP=192.168.1.100
 
+# v0.4.0 Direct Connection Testing
+export ASCOM_DIRECT_DEVICES="telescope_1:seestar.local:5555:Seestar S50"
+
 # Run hardware-compatible tests
 pytest tests/e2e/ -v -m "not simulator_only"
 
 # Run specific hardware test
 pytest tests/e2e/test_real_hardware.py::test_focus_control -v
+
+# Test v0.4.0 features
+python test_v0.4_direct_connection.py
 ```
 
 ### Test Selection
