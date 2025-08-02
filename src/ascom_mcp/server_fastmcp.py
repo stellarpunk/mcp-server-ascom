@@ -507,8 +507,9 @@ async def telescope_where_am_i(ctx: Context, device_id: str) -> dict[str, Any]:
             {"method": "scope_get_track_state"}
         )
         
-        # Get preview
-        preview_task = telescope_preview(ctx, device_id)
+        # Get preview (note: telescope_preview is an MCP tool, not in telescope_tools)
+        # For now, skip preview in this compound operation to avoid circular calls
+        preview_task = asyncio.create_task(asyncio.sleep(0))
         
         # Run in parallel
         position, tracking, preview = await asyncio.gather(

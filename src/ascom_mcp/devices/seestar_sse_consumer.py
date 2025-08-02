@@ -164,10 +164,18 @@ class SeestarSSEConsumer:
             match = re.search(r'<pre>[^:]+: (.+)</pre>', data)
             if match:
                 json_str = match.group(1)
-                return json.loads(json_str)
+                parsed = json.loads(json_str)
             else:
                 # Try direct JSON parse in case format changes
-                return json.loads(data)
+                parsed = json.loads(data)
+            
+            # Ensure we got a dict
+            if isinstance(parsed, dict):
+                return parsed
+            else:
+                logger.debug(f"Parsed non-dict data: {type(parsed).__name__}", extra={"data": str(parsed)[:100]})
+                return None
+                
         except (json.JSONDecodeError, AttributeError) as e:
             logger.debug(f"Failed to parse event: {e}", extra={"data": data[:100]})
             return None
