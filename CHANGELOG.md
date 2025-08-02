@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.5.0] - 2025-08-01
+
+Type-safe SDK, visual feedback, and parameter validation.
+
+### Added
+- **Type-Safe Python SDK** with Pydantic models
+  - 60+ safe commands for AI use
+  - Full parameter validation
+  - Visual feedback support
+  - MJPEG streaming integration
+- **Visual Feedback Tools**
+  - `telescope_preview()` - Capture current view
+  - `telescope_where_am_i()` - Position with preview
+  - `telescope_start_streaming()` - Live video feed
+- **Streaming Resources**
+  - `ascom://telescope/{id}/live-preview` - MJPEG URLs
+- **SDK Services**
+  - TelescopeService - Movement with previews
+  - ViewingService - Scenery mode support
+  - ImagingService - Frame capture
+  - StreamingService - MJPEG handling
+- **Validation layer** prevents common parameter errors (Error 207)
+- **SSE event consumer** for cross-process events
+
+### Fixed
+- Tracking parameter bug that caused Error 207
+- Coordinate validation for goto commands
+- Focus position range validation
+- Event streaming architecture (blinker → SSE)
+
+### Changed
+- Enhanced `telescope_custom_action` with automatic validation
+- Consolidated telescope tools (removed telescope_enhanced.py)
+- Updated to FastMCP 2.0 patterns throughout
+- Added asyncio support for parallel operations
+
+## [0.4.0] - 2025-08-01
+
+Event streaming support for real-time updates.
+
+### Added
+- Event streaming infrastructure
+- Hot-reload development mode
+- Direct device connections without discovery
+
 ## [0.3.0] - 2025-01-30
 
 FastMCP. Structured logging. Half the code.

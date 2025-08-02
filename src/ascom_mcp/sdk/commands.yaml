@@ -1,0 +1,278 @@
+# Safe Seestar S50 Commands for MCP SDK
+# Based on OpenAPI analysis and simulator validation
+# 
+# This file defines the subset of commands safe for AI use
+# Excludes: system control, calibration, network config
+
+version: "1.0.0"
+sdk_name: "seestar-sdk"
+description: "Type-safe Python SDK for Seestar S50 telescope control"
+
+categories:
+  telescope:
+    description: "Basic telescope movement and positioning"
+    commands:
+      - name: scope_get_equ_coord
+        description: "Get current RA/Dec coordinates"
+        category: status
+        safe: true
+        
+      - name: scope_get_ra_dec
+        description: "Get current RA/Dec (alternative)"
+        category: status
+        safe: true
+        
+      - name: scope_goto
+        description: "Go to RA/Dec coordinates"
+        category: movement
+        safe: true
+        requires_startup: true
+        params:
+          ra_hour: 
+            type: float
+            min: 0
+            max: 24
+          dec_deg:
+            type: float
+            min: -90
+            max: 90
+            
+      - name: scope_speed_move
+        description: "Move telescope in direction"
+        category: movement
+        safe: true
+        params:
+          speed:
+            type: int
+            min: 0
+            max: 1000
+            default: 300
+          angle:
+            type: int
+            enum: [0, 90, 180, 270]
+            description: "0=North, 90=East, 180=South, 270=West"
+          dur_sec:
+            type: float
+            min: 0.1
+            max: 30
+            default: 3.0
+
+  tracking:
+    description: "Tracking control"
+    commands:
+      - name: scope_get_track_state
+        description: "Get tracking status"
+        category: status
+        safe: true
+        
+      - name: scope_set_track_state
+        description: "Enable/disable tracking"
+        category: control
+        safe: true
+        params:
+          # CRITICAL: Direct boolean, NOT object!
+          type: boolean
+          description: "true/false directly, not {on: true}"
+
+  viewing:
+    description: "View modes and live streaming"
+    commands:
+      - name: iscope_start_view
+        description: "Start viewing mode"
+        category: imaging
+        safe: true
+        params:
+          mode:
+            type: string
+            enum: ["star", "moon", "sun", "scenery", "planet"]
+            default: "star"
+          target_name:
+            type: string
+            required: false
+            description: "Optional target name for goto"
+            
+      - name: iscope_stop_view
+        description: "Stop viewing"
+        category: imaging
+        safe: true
+        
+      - name: get_view_state
+        description: "Get current view status"
+        category: status
+        safe: true
+
+  streaming:
+    description: "Video streaming control"
+    commands:
+      - name: begin_streaming
+        description: "Start video stream"
+        category: streaming
+        safe: true
+        
+      - name: stop_streaming
+        description: "Stop video stream"
+        category: streaming
+        safe: true
+        
+      - name: get_current_img
+        description: "Capture current frame"
+        category: imaging
+        safe: true
+
+  focus:
+    description: "Focus control"
+    commands:
+      - name: get_focuser_position
+        description: "Get current focus position"
+        category: status
+        safe: true
+        
+      - name: move_focuser
+        description: "Set focus position"
+        category: control
+        safe: true
+        params:
+          step:
+            type: int
+            min: 0
+            max: 3000
+            description: "Stars: 1800-2000, Terrestrial: 500-1500"
+            
+      - name: start_auto_focuse  # Note: API typo!
+        description: "Start auto-focus"
+        category: control
+        safe: true
+        
+      - name: stop_auto_focuse
+        description: "Stop auto-focus"
+        category: control
+        safe: true
+
+  filter:
+    description: "Filter wheel control"
+    commands:
+      - name: get_wheel_position
+        description: "Get current filter"
+        category: status
+        safe: true
+        
+      - name: set_wheel_position
+        description: "Set filter position"
+        category: control
+        safe: true
+        params:
+          pos:
+            type: int
+            min: 0
+            max: 2
+            description: "0=Clear, 1=UV/IR Cut, 2=Light Pollution"
+
+  imaging:
+    description: "Image capture and stacking"
+    commands:
+      - name: iscope_start_stack
+        description: "Start image stacking"
+        category: imaging
+        safe: true
+        requires_startup: true
+        params:
+          mode:
+            type: string
+            enum: ["star", "moon", "sun", "scenery", "planet"]
+            default: "star"
+          target_name:
+            type: string
+            required: true
+            
+      - name: save_image
+        description: "Save current image"
+        category: imaging
+        safe: true
+        
+      - name: get_stack_info
+        description: "Get stacking progress"
+        category: status
+        safe: true
+
+  status:
+    description: "Device status queries"
+    commands:
+      - name: get_device_state
+        description: "Get overall device state"
+        category: status
+        safe: true
+        
+      - name: test_connection
+        description: "Test device connection"
+        category: status
+        safe: true
+        
+      - name: pi_get_time
+        description: "Get device time"
+        category: status
+        safe: true
+
+  initialization:
+    description: "Safe initialization commands"
+    commands:
+      - name: action_start_up_sequence
+        description: "Initialize telescope (REQUIRED before most operations)"
+        category: initialization
+        safe: true
+        critical: true
+        params:
+          lat:
+            type: float
+            min: -90
+            max: 90
+          lon:
+            type: float
+            min: -180
+            max: 180
+          time_zone:
+            type: string
+            default: "UTC"
+          move_arm:
+            type: boolean
+            default: true
+            
+      - name: goto_preset
+        description: "Go to named preset"
+        category: movement
+        safe: true
+        params:
+          preset_id:
+            type: string
+            examples: ["manhattan_skyline", "uss_intrepid", "zenith"]
+
+# Visual feedback endpoints (not commands, but important for SDK)
+streaming_endpoints:
+  mjpeg_live:
+    url: "http://{host}:5432/img/live_stacking"
+    description: "MJPEG live view stream"
+    
+  frame_status:
+    url: "http://{host}:7556/{device_num}/vid/status" 
+    description: "SSE frame counter"
+    
+  event_stream:
+    url: "http://{host}:7556/{device_num}/events"
+    description: "SSE event stream"
+
+# Safety metadata
+safety_rules:
+  - "Always run action_start_up_sequence before operations"
+  - "Use solar mode before pointing at sun"
+  - "Verify tracking parameter format to prevent Error 207"
+  - "Check battery level before long operations"
+  - "Focus ranges vary by distance: Stars 1800-2000, Terrestrial 500-1500"
+
+# Commands explicitly excluded for safety
+excluded_commands:
+  - pi_shutdown
+  - pi_reboot
+  - calibrate_wheel
+  - reset_factory_focal_pos
+  - delete_all_image
+  - clear_stack
+  - All network configuration commands
