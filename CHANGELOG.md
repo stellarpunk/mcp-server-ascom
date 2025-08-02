@@ -2,29 +2,39 @@
 
 ## [0.5.0] - 2025-08-01
 
-Parameter validation and helper methods based on OpenAPI analysis.
+Type-safe SDK, visual feedback, and parameter validation.
 
 ### Added
+- **Type-Safe Python SDK** with Pydantic models
+  - 60+ safe commands for AI use
+  - Full parameter validation
+  - Visual feedback support
+  - MJPEG streaming integration
+- **Visual Feedback Tools**
+  - `telescope_preview()` - Capture current view
+  - `telescope_where_am_i()` - Position with preview
+  - `telescope_start_streaming()` - Live video feed
+- **Streaming Resources**
+  - `ascom://telescope/{id}/live-preview` - MJPEG URLs
+- **SDK Services**
+  - TelescopeService - Movement with previews
+  - ViewingService - Scenery mode support
+  - ImagingService - Frame capture
+  - StreamingService - MJPEG handling
 - **Validation layer** prevents common parameter errors (Error 207)
-- **Helper methods** for 41 simulator-verified commands
-  - `telescope_set_tracking()` - Safe tracking control
-  - `telescope_move_direction()` - Easy directional movement
-  - `telescope_auto_focus()` - Handles API typo
-  - `telescope_safe_startup()` - Required initialization
-  - `telescope_get_full_status()` - Comprehensive status
-  - 5+ more helper methods
-- **Parameter validation tests** ensure correctness
-- **OpenAPI-based validation** from comprehensive API analysis
+- **SSE event consumer** for cross-process events
 
 ### Fixed
 - Tracking parameter bug that caused Error 207
 - Coordinate validation for goto commands
 - Focus position range validation
-- No-parameter command validation
+- Event streaming architecture (blinker → SSE)
 
 ### Changed
 - Enhanced `telescope_custom_action` with automatic validation
-- Updated CLAUDE.md with v0.5.0 features
+- Consolidated telescope tools (removed telescope_enhanced.py)
+- Updated to FastMCP 2.0 patterns throughout
+- Added asyncio support for parallel operations
 
 ## [0.4.0] - 2025-08-01
 

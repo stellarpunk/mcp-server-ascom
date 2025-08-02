@@ -1,8 +1,8 @@
 """
 Bridge between Seestar eventbus and MCP event system.
 
-This module handles the integration between Seestar's blinker-based
-event system and the MCP event stream manager.
+This module handles the integration between Seestar's SSE-based
+event streaming and the MCP event stream manager.
 """
 
 import asyncio
@@ -10,6 +10,7 @@ import json
 from typing import Any
 
 from ascom_mcp.ascom_logging import StructuredLogger
+from .seestar_sse_consumer import SeestarSSEConsumer
 
 logger = StructuredLogger("ascom.seestar.events")
 
@@ -24,6 +25,7 @@ class SeestarEventBridge:
             event_manager: The EventStreamManager instance
         """
         self.event_manager = event_manager
+        self._sse_consumer = SeestarSSEConsumer(event_manager)
         self._active_subscriptions = {}
         self._event_loop = None
         
@@ -37,12 +39,20 @@ class SeestarEventBridge:
             device_info: Device information
         """
         try:
-            # For Seestar devices at port 5555, we know they have eventbus
+            # For Seestar devices at port 5555, start SSE consumer
             if device_info.port == 5555 and "seestar" in device_info.name.lower():
-                logger.info(f"Setting up Seestar event bridge for {device_id}")
+                logger.info(f"Setting up Seestar SSE event consumer for {device_id}")
                 
-                # Note: The actual eventbus connection happens in seestar_alp
-                # We'll hook into it through the telescope connection
+                # Extract device number from device_id or default to 1
+                device_num = 1
+                if device_id.startswith("telescope_"):
+                    try:
+                        device_num = int(device_id.split("_")[1])
+                    except (IndexError, ValueError):
+                        pass
+                
+                # Start SSE consumer
+                await self._sse_consumer.start_consuming(device_id, device_num)
                 
                 # Store metadata for this device
                 await self.event_manager.set_device_metadata(
@@ -52,13 +62,14 @@ class SeestarEventBridge:
                         "type": "Seestar",
                         "unique_id": device_info.unique_id,
                         "supports_events": True,
+                        "event_source": "SSE",
                     }
                 )
                 
-                logger.info(f"Seestar event bridge ready for {device_id}")
+                logger.info(f"Seestar SSE consumer started for {device_id}")
                 
         except Exception as e:
-            logger.error(f"Failed to set up Seestar event bridge: {e}")
+            logger.error(f"Failed to set up Seestar SSE consumer: {e}")
             
     async def handle_seestar_event(self, device_id: str, event_data: dict) -> None:
         """Handle an event from Seestar.
@@ -103,6 +114,21 @@ class SeestarEventBridge:
                 
         except Exception as e:
             logger.error(f"Failed to handle Seestar event: {e}", device_id=device_id)
+            
+    async def disconnect_from_seestar(self, device_id: str) -> None:
+        """Disconnect from a Seestar device's event system.
+        
+        This is called when a Seestar telescope is disconnected.
+        
+        Args:
+            device_id: The device identifier
+        """
+        try:
+            # Stop SSE consumer
+            await self._sse_consumer.stop_consuming(device_id)
+            logger.info(f"Seestar SSE consumer stopped for {device_id}")
+        except Exception as e:
+            logger.error(f"Failed to stop Seestar SSE consumer: {e}")
             
     def setup_event_loop(self):
         """Set up the event loop for async operations."""

@@ -16,16 +16,22 @@ Control telescopes with AI. Works with any ASCOM device.
 - [Testing Strategy](docs/E2E_TESTING_GUIDE.md)
 - [Examples](examples/README.md)
 
-## v0.3.0 Updates
+## 🎯 v0.5.0: Visual Feedback & Type Safety!
 
-- FastMCP 2.0 - Half the code
-- JSON logging - OpenTelemetry ready
-- Better errors - Protocol compliance built-in
+See what your telescope sees:
+- **Visual Preview**: `telescope_preview()` shows current view
+- **Live Streaming**: `telescope_start_streaming()` for MJPEG feed  
+- **Where Am I?**: `telescope_where_am_i()` with position + image
+- **Type-Safe SDK**: No more parameter guessing!
+- **Scenery Mode**: Optimized for terrestrial viewing
 
 ## Features
 
 - Works with any ASCOM telescope, camera, or focuser
 - Natural language control: "Point at the Orion Nebula"
+- Visual feedback - always see where telescope points
+- Type-safe Python SDK with full validation
+- MJPEG streaming for real-time monitoring
 - Auto-discovers devices on your network
 - Async architecture - never blocks
 - Full test coverage and type safety
@@ -40,13 +46,10 @@ pip install mcp-server-ascom
 uvx mcp-server-ascom
 ```
 
-### 🚀 v0.4.0: Instant Connections!
+### Previous Updates
 
-No more waiting! Connect directly without discovery:
-```bash
-# Direct connection - no setup required!
-telescope_connect device_id="seestar@192.168.1.100:5555"
-```
+**v0.4.0**: Instant connections without discovery  
+**v0.3.0**: FastMCP 2.0, JSON logging, better errors
 
 ## Claude Desktop Setup
 

@@ -1,12 +1,14 @@
 # CLAUDE.md - ASCOM MCP Server (v0.5.0)
 
-Bridge ASCOM devices to Claude via MCP. **Now with OpenAPI validation & helper methods!**
+Bridge ASCOM devices to Claude via MCP. **Now with Visual Feedback & Type-Safe SDK!**
 
 ## What's New in v0.5.0
-- ✅ **Parameter Validation**: Prevents Error 207 and other common mistakes
-- 🚀 **Helper Methods**: Easy-to-use tools for 41 verified commands  
-- 📋 **OpenAPI-based**: Validation from comprehensive API analysis
-- 🛡️ **Safety First**: Automatic startup sequence & safety checks
+- 👁️ **Visual Feedback**: See where telescope points with preview tools
+- 🎯 **Type-Safe SDK**: Pydantic models prevent parameter errors
+- 📹 **MJPEG Streaming**: Live video feeds for real-time monitoring
+- 🏙️ **Scenery Mode**: Optimized for terrestrial viewing (SpatialLM ready!)
+- ✅ **Parameter Validation**: Prevents Error 207 and other mistakes
+- 🚀 **Helper Methods**: Easy tools for common operations
 
 ## Quick Start
 
@@ -82,19 +84,37 @@ telescope_custom_action(
 )
 ```
 
+### Visual Feedback Operations (NEW!)
+```python
+# See where telescope is pointing
+telescope_where_am_i(device_id="telescope_1")
+# Returns: position + preview image
+
+# Get current view
+telescope_preview(device_id="telescope_1")
+# Returns: JPEG image in base64
+
+# Start live streaming
+telescope_start_streaming(device_id="telescope_1")
+# Returns: MJPEG URL for browser
+
+# Start scenery mode for terrestrial viewing
+telescope_custom_action(device_id="telescope_1", 
+    action="method_sync",
+    parameters='{"method": "iscope_start_view", "params": {"mode": "scenery"}}')
+```
+
 ### Basic Operations (Now with Validation!)
 ```python
 # Safe tracking control - no more Error 207!
-telescope_set_tracking(device_id="telescope_1", enabled=True)
+telescope_custom_action(device_id="telescope_1",
+    action="method_sync", 
+    parameters='{"method": "scope_set_track_state", "params": true}')
 
-# Easy movement with direction names
-telescope_move_direction(device_id="telescope_1", direction="north", duration=5)
-
-# Auto-focus with correct API spelling
-telescope_auto_focus(device_id="telescope_1")
-
-# Get comprehensive status
-telescope_get_full_status(device_id="telescope_1")
+# Movement with validated parameters
+telescope_custom_action(device_id="telescope_1",
+    action="method_sync",
+    parameters='{"method": "scope_speed_move", "params": {"speed": 300, "angle": 0, "dur_sec": 3}}')
 ```
 
 ### Classic Operations (Still Work)

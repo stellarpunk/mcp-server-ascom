@@ -6,6 +6,7 @@ This is a cleaner, more maintainable implementation compared to the low-level AP
 FastMCP is now the recommended approach for MCP servers in Python.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -403,6 +404,177 @@ async def telescope_custom_action(
         )
 
 
+# Visual feedback tools
+@mcp.tool()
+async def telescope_preview(ctx: Context, device_id: str) -> dict[str, Any]:
+    """Get current telescope view as an image.
+    
+    Captures the current view through the telescope for visual feedback.
+    
+    Args:
+        ctx: FastMCP context
+        device_id: Connected telescope device ID
+        
+    Returns:
+        Dictionary with base64 encoded JPEG image and metadata
+    """
+    await ensure_initialized()
+    await ctx.info(f"Capturing preview from {device_id}")
+    
+    try:
+        # Use custom action to get current image
+        result = await telescope_tools.custom_action(
+            device_id,
+            "method_sync",
+            {"method": "get_current_img"}
+        )
+        
+        # Extract image data
+        if result.get("success") and result.get("result"):
+            import base64
+            image_data = result["result"].get("image_data", "")
+            
+            return {
+                "success": True,
+                "image": image_data,  # Base64 encoded
+                "format": "jpeg",
+                "timestamp": result["result"].get("Timestamp")
+            }
+            
+        # Fallback to MJPEG capture
+        await ctx.warning("Direct capture failed, trying MJPEG stream")
+        
+        # Would implement MJPEG frame grab here
+        return {
+            "success": False,
+            "error": "Preview capture not available",
+            "mjpeg_url": f"http://seestar.local:5432/img/live_stacking"
+        }
+        
+    except Exception as e:
+        await ctx.error(f"Preview failed: {e}")
+        raise ToolError(f"Failed to capture preview: {e}")
+
+
+@mcp.tool()
+async def telescope_where_am_i(ctx: Context, device_id: str) -> dict[str, Any]:
+    """Get current telescope position with visual preview.
+    
+    Returns comprehensive status including coordinates, tracking state,
+    and a preview image of the current view.
+    
+    Args:
+        ctx: FastMCP context
+        device_id: Connected telescope device ID
+        
+    Returns:
+        Dictionary with position, status, and preview image
+    """
+    await ensure_initialized()
+    await ctx.info("Getting telescope position and preview")
+    
+    try:
+        # Get position
+        position_task = telescope_tools.custom_action(
+            device_id,
+            "method_sync", 
+            {"method": "scope_get_equ_coord"}
+        )
+        
+        # Get tracking state
+        tracking_task = telescope_tools.custom_action(
+            device_id,
+            "method_sync",
+            {"method": "scope_get_track_state"}
+        )
+        
+        # Get preview
+        preview_task = telescope_preview(ctx, device_id)
+        
+        # Run in parallel
+        position, tracking, preview = await asyncio.gather(
+            position_task,
+            tracking_task,
+            preview_task,
+            return_exceptions=True
+        )
+        
+        # Handle results
+        result = {
+            "success": True,
+            "device_id": device_id
+        }
+        
+        if isinstance(position, dict) and position.get("success"):
+            pos_data = position.get("result", {})
+            result.update({
+                "ra": pos_data.get("ra"),
+                "dec": pos_data.get("dec"),
+                "alt": pos_data.get("alt"),
+                "az": pos_data.get("az")
+            })
+            
+        if isinstance(tracking, dict) and tracking.get("success"):
+            track_data = tracking.get("result", {})
+            result["tracking"] = track_data.get("tracking", False)
+            
+        if isinstance(preview, dict) and preview.get("success"):
+            result["preview"] = preview
+            
+        return result
+        
+    except Exception as e:
+        await ctx.error(f"Status check failed: {e}")
+        raise ToolError(f"Failed to get telescope status: {e}")
+
+
+@mcp.tool()
+async def telescope_start_streaming(ctx: Context, device_id: str) -> dict[str, Any]:
+    """Start video streaming and return MJPEG URL.
+    
+    Enables live video streaming from the telescope.
+    
+    Args:
+        ctx: FastMCP context
+        device_id: Connected telescope device ID
+        
+    Returns:
+        Dictionary with streaming URL and status
+    """
+    await ensure_initialized()
+    await ctx.info("Starting video stream")
+    
+    try:
+        # Start streaming
+        result = await telescope_tools.custom_action(
+            device_id,
+            "method_sync",
+            {"method": "begin_streaming"}
+        )
+        
+        if result.get("success"):
+            # Get device info for host
+            device = await device_manager.get_device(device_id)
+            host = device.host if device else "seestar.local"
+            
+            return {
+                "success": True,
+                "streaming": True,
+                "mjpeg_url": f"http://{host}:5432/img/live_stacking",
+                "frame_status_url": f"http://{host}:7556/1/vid/status",
+                "message": "Streaming started. Open mjpeg_url in browser for live view."
+            }
+            
+        return {
+            "success": False,
+            "error": result.get("error", "Failed to start streaming")
+        }
+        
+    except Exception as e:
+        await ctx.error(f"Streaming failed: {e}")
+        raise ToolError(f"Failed to start streaming: {e}")
+
+
 # Camera tools
 @mcp.tool()
 async def camera_connect(ctx: Context, device_id: str) -> dict[str, Any]:
@@ -628,6 +800,41 @@ async def get_available_devices() -> str:
         devices = await device_manager.get_available_devices()
         return json.dumps({"devices": devices}, indent=2)
     return json.dumps({"devices": []}, indent=2)
+
+
+@mcp.resource("ascom://telescope/{device_id}/live-preview")
+async def get_live_preview_url(device_id: str) -> str:
+    """Get URL for live telescope view (MJPEG stream).
+    
+    Returns the URL where you can view live video from the telescope.
+    Open this URL in a web browser to see real-time telescope feed.
+    
+    Args:
+        device_id: Connected telescope device ID
+        
+    Returns:
+        JSON with streaming URLs and status
+    """
+    await ensure_initialized()
+    
+    if device_manager:
+        device = await device_manager.get_device(device_id)
+        if device:
+            host = device.host
+            return json.dumps({
+                "device_id": device_id,
+                "mjpeg_url": f"http://{host}:5432/img/live_stacking",
+                "frame_status_url": f"http://{host}:7556/1/vid/status",
+                "web_ui_url": f"http://{host}:5432",
+                "instructions": "Open mjpeg_url in browser for live view"
+            }, indent=2)
+    
+    # Fallback
+    return json.dumps({
+        "device_id": device_id,
+        "mjpeg_url": "http://seestar.local:5432/img/live_stacking",
+        "error": "Device not found, using default URL"
+    }, indent=2)
 
 
 @mcp.resource("ascom://events/{device_id}/stream")
