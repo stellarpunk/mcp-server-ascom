@@ -1,5 +1,66 @@
 # Next Session Notes
 
+## 2025-08-02 Session Update - SSE Event Streaming Fixed! 🎉
+
+### ✅ Root Cause Found & Fixed
+- **Import Error**: Server failed to start due to non-existent `DebugTools` import
+- **No Hot-Reload**: stdio transport doesn't support hot-reload, so our SSE fixes never took effect
+- **Solution**: Fixed import error and updated MCP configuration to use launcher.py
+
+### 🔧 Key Fixes Applied
+1. **Removed debug import**: Cleaned up server_fastmcp.py
+2. **Updated MCP config**: Now uses launcher.py for proper transport detection
+3. **SSE Consumer**: All fixes from previous session now active:
+   - Class-level task storage for HTTP statelessness
+   - ClientSession lifecycle management  
+   - Direct task creation (no double wrapping)
+   - Proper event callback registration
+
+### ✅ SSE Event Streaming Working
+- **Event Infrastructure**: All components functioning correctly
+- **Event Storage**: Events properly captured with timestamps
+- **Event Types**: Complete event type system accessible
+- **Auto-start**: SSE consumer starts automatically on Seestar connection
+- **Port 7556**: Confirmed as correct SSE endpoint
+
+### 🎯 What We Learned
+- **Debugging Hot-Reload**: Always verify changes are actually loaded
+- **MCP Transport Modes**: stdio (Claude Code) vs HTTP (manual) have different behaviors
+- **launcher.py**: Essential for proper MCP server operation with Claude Code
+- **Event Architecture**: SSE consumer → Event Bridge → Event Manager → MCP Resources
+
+## 2025-08-02 Session Update - v0.5.0 MCP Validation & SSE Debugging
+
+### ✅ Claude Code MCP Configuration
+- **launcher.py approach**: Use `claude mcp add ascom "/path/to/.venv/bin/python" -- "/path/to/launcher.py"`
+- **Auto-transport detection**: stdio for Claude Code, HTTP for manual runs
+- **Hot-reload working**: Changes auto-restart server
+- **Documented in**: CLAUDE.md and README.md
+
+### 🔧 SSE Consumer Debugging
+- **Port confusion**: Initially thought SSE was on 5555, but it's on 7556
+- **Reverted change**: Port 7556 is correct for SSE endpoint
+- **Docker interference**: socat container was blocking services
+- **Root issue**: SSE consumer not starting because callback not triggered
+- **Telescope moves**: Confirmed working (RA/Dec changes after movement)
+
+### ✅ v0.5.0 Validation via MCP
+- **Startup sequence**: Works correctly with `action_start_up_sequence`
+- **Parameter validation**: Prevents Error 207 successfully
+- **Movement confirmed**: Telescope physically moves, position changes verified
+- **Scenery mode**: Started successfully for terrestrial viewing
+- **Focus control**: Can read position correctly
+- **Missing**: Real-time event feedback during operations
+
+### ⚠️ Remaining Issues
+- **Event streaming**: SSE consumer not starting when connecting via MCP
+  - The `on_device_connected` callback is registered but not being called
+  - SSE endpoint works (port 7556) but consumer isn't initialized
+  - Need to investigate why device manager callback chain is broken
+- **Visual feedback tools**: `telescope_where_am_i` returns callable error
+- **Preview capture**: Returns empty image data
+- **MJPEG streaming**: Port 5432 works but needs integration
+
 ## 2025-08-02 Session Update - v0.5.0 SDK Complete! 🎉
 
 ### ✅ Type-Safe Python SDK Implemented

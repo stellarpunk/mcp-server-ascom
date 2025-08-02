@@ -70,6 +70,18 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop to activate.
 
+## Claude Code Setup
+
+```bash
+git clone https://github.com/stellarpunk/mcp-server-ascom
+cd mcp-server-ascom
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+claude mcp add ascom "$PWD/.venv/bin/python" -- "$PWD/launcher.py"
+```
+
 ## Usage
 
 ### Quick Connect (No Configuration)

@@ -25,6 +25,14 @@ pytest tests/integration/ -v  # Integration tests (NEW!)
 pytest tests/mcp/ -v          # MCP protocol tests
 ```
 
+## Claude Code MCP Configuration
+
+```bash
+claude mcp add ascom "/path/to/.venv/bin/python" -- "/path/to/launcher.py"
+```
+
+`launcher.py` detects transport (stdio for Claude Code, HTTP for manual runs) and enables hot-reload.
+
 ## Architecture
 
 Our server is a "USB cable" between MCP and ASCOM:

@@ -29,7 +29,6 @@ class SeestarSSEConsumer:
         self.event_manager = event_manager
         self.base_url = base_url
         self._tasks: Dict[str, asyncio.Task] = {}
-        self._sessions: Dict[str, aiohttp.ClientSession] = {}
         
     async def start_consuming(self, device_id: str, device_num: int = 1) -> None:
         """Start consuming events for a device.
@@ -41,11 +40,8 @@ class SeestarSSEConsumer:
         if device_id in self._tasks:
             logger.debug(f"Already consuming events for {device_id}")
             return
-            
-        # Create session for this device
-        self._sessions[device_id] = aiohttp.ClientSession()
         
-        # Start consumer task
+        # Start consumer task - session will be created inside
         task = asyncio.create_task(self._consume_events(device_id, device_num))
         self._tasks[device_id] = task
         
@@ -53,6 +49,20 @@ class SeestarSSEConsumer:
             f"Started SSE consumer for {device_id}",
             extra={"device_id": device_id, "device_num": device_num}
         )
+        
+        # Don't await the task - let it run in background
+        # The task will continue running even after this method returns
+        
+        # Add error handler to log if task fails
+        def _handle_task_done(task):
+            try:
+                task.result()  # This will raise any exception from the task
+            except asyncio.CancelledError:
+                logger.debug(f"SSE consumer task cancelled for {device_id}")
+            except Exception as e:
+                logger.error(f"SSE consumer task failed for {device_id}: {e}", exc_info=True)
+        
+        task.add_done_callback(_handle_task_done)
         
     async def stop_consuming(self, device_id: str) -> None:
         """Stop consuming events for a device.
@@ -67,10 +77,11 @@ class SeestarSSEConsumer:
         task = self._tasks.pop(device_id)
         task.cancel()
         
-        # Close session
-        if device_id in self._sessions:
-            session = self._sessions.pop(device_id)
-            await session.close()
+        # Wait for task to finish
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
             
         logger.info(f"Stopped SSE consumer for {device_id}")
         
@@ -82,51 +93,60 @@ class SeestarSSEConsumer:
             device_num: Seestar device number
         """
         url = f"{self.base_url}/{device_num}/events"
-        session = self._sessions[device_id]
         
-        while True:
-            try:
-                logger.debug(f"Connecting to SSE endpoint: {url}")
-                
-                async with session.get(url, timeout=None) as response:
-                    if response.status != 200:
-                        logger.error(
-                            f"SSE connection failed: {response.status}",
-                            extra={"url": url, "status": response.status}
-                        )
-                        await asyncio.sleep(5)  # Retry delay
-                        continue
-                        
-                    logger.info(f"Connected to SSE stream for {device_id}")
+        logger.info(f"[SSE] Starting _consume_events for {device_id}, URL: {url}")
+        
+        # Create session inside the task to ensure proper lifecycle
+        async with aiohttp.ClientSession() as session:
+            logger.info(f"[SSE] Created ClientSession for {device_id}")
+            
+            while True:
+                try:
+                    logger.info(f"[SSE] Attempting connection to: {url}")
                     
-                    # Process event stream
-                    async for line in response.content:
-                        if not line:
+                    async with session.get(url, timeout=None) as response:
+                        if response.status != 200:
+                            logger.error(
+                                f"SSE connection failed: {response.status}",
+                                extra={"url": url, "status": response.status}
+                            )
+                            await asyncio.sleep(5)  # Retry delay
                             continue
                             
-                        line_str = line.decode('utf-8').strip()
+                        logger.info(f"[SSE] Connected! Status 200 for {device_id}")
                         
-                        # Parse SSE format
-                        if line_str.startswith('data: '):
-                            event_data = self._parse_event(line_str[6:])
-                            if event_data:
-                                await self._forward_event(device_id, event_data)
+                        # Process event stream
+                        event_count = 0
+                        async for line in response.content:
+                            if not line:
+                                continue
                                 
-            except asyncio.CancelledError:
-                logger.debug(f"SSE consumer cancelled for {device_id}")
-                break
-            except aiohttp.ClientError as e:
-                logger.error(
-                    f"SSE connection error: {e}",
-                    extra={"device_id": device_id, "error": str(e)}
-                )
-                await asyncio.sleep(5)  # Retry delay
-            except Exception as e:
-                logger.error(
-                    f"Unexpected error in SSE consumer: {e}",
-                    extra={"device_id": device_id, "error": str(e)}
-                )
-                await asyncio.sleep(5)  # Retry delay
+                            line_str = line.decode('utf-8').strip()
+                            logger.debug(f"[SSE] Raw line: {line_str[:100]}...")
+                            
+                            # Parse SSE format
+                            if line_str.startswith('data: '):
+                                event_data = self._parse_event(line_str[6:])
+                                if event_data:
+                                    event_count += 1
+                                    logger.info(f"[SSE] Event #{event_count} parsed for {device_id}")
+                                    await self._forward_event(device_id, event_data)
+                                    
+                except asyncio.CancelledError:
+                    logger.debug(f"SSE consumer cancelled for {device_id}")
+                    break
+                except aiohttp.ClientError as e:
+                    logger.error(
+                        f"SSE connection error: {e}",
+                        extra={"device_id": device_id, "error": str(e)}
+                    )
+                    await asyncio.sleep(5)  # Retry delay
+                except Exception as e:
+                    logger.error(
+                        f"Unexpected error in SSE consumer: {e}",
+                        extra={"device_id": device_id, "error": str(e)}
+                    )
+                    await asyncio.sleep(5)  # Retry delay
                 
     def _parse_event(self, data: str) -> Optional[Dict[str, Any]]:
         """Parse event from SSE data format.
@@ -172,7 +192,7 @@ class SeestarSSEConsumer:
         # Add to event manager
         await self.event_manager.add_event(device_id, mcp_event)
         
-        logger.debug(
+        logger.info(
             f"Forwarded {event_type} event",
             extra={"device_id": device_id, "event_type": event_type}
         )

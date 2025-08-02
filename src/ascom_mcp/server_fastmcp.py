@@ -51,17 +51,29 @@ async def server_lifespan(server: FastMCP):
     global device_manager, event_manager, event_bridge, discovery_tools, telescope_tools, camera_tools, event_tools
 
     logger.info(f"Starting ASCOM MCP Server v{__version__} (FastMCP)")
+    logger.debug("Lifespan: Initializing components...")
 
     # Initialize device manager and tools
     device_manager = DeviceManager()
+    logger.debug("Created DeviceManager")
     await device_manager.initialize()
+    logger.debug("DeviceManager initialized")
 
     event_manager = EventStreamManager()
+    logger.debug("Created EventStreamManager")
+    
     event_bridge = SeestarEventBridge(event_manager)
+    logger.debug("Created SeestarEventBridge")
+    
     event_bridge.setup_event_loop()  # Capture asyncio event loop for sync->async bridge
+    logger.debug("Set up event loop for event bridge")
     
     # Register event callbacks
     device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
+    logger.debug("Registered on_device_connected callback")
+    
+    # Note: SSE consumer will be started automatically when telescope connects
+    # via the on_device_connected callback
     
     discovery_tools = DiscoveryTools(device_manager)
     telescope_tools = TelescopeTools(device_manager)
@@ -84,18 +96,25 @@ async def ensure_initialized():
     """Ensure all global tools are initialized."""
     global device_manager, event_manager, event_bridge, discovery_tools, telescope_tools, camera_tools, event_tools
 
+    logger.debug("ensure_initialized called")
+    
     if device_manager is None:
+        logger.debug("Creating DeviceManager in ensure_initialized")
         device_manager = DeviceManager()
         await device_manager.initialize()
 
     if event_manager is None:
+        logger.debug("Creating EventStreamManager in ensure_initialized")
         event_manager = EventStreamManager()
         
     if event_bridge is None:
+        logger.debug("Creating SeestarEventBridge in ensure_initialized")
         event_bridge = SeestarEventBridge(event_manager)
         event_bridge.setup_event_loop()  # Capture asyncio event loop
+        logger.debug("Setting up event loop for event bridge")
         # Register event callbacks
         device_manager.register_event_callback("on_device_connected", event_bridge.connect_to_seestar)
+        logger.debug("Registered on_device_connected callback in ensure_initialized")
 
     if discovery_tools is None:
         discovery_tools = DiscoveryTools(device_manager)
@@ -738,6 +757,7 @@ async def get_event_types(ctx: Context) -> dict[str, Any]:
             code="event_types_failed",
             recoverable=True
         )
+
 
 
 # Resources
