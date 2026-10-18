@@ -113,3 +113,5 @@ test_stdio_*.py
 test_sse_*.py
 test_v*.py
 test_working_*.py
+# credentials stay out of git (homelab-governance P0, 2026-10-18)
+/.env.real_seestar
