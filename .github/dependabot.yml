@@ -1,0 +1,18 @@
+# Dependabot version updates (homelab-governance supply-chain baseline, 2026-10-20). Every update waits out a cooldown:
+# 7 days by default, 14 for a semver-major bump where the ecosystem supports per-bump days (uv). github-actions keeps the
+# SHA pins and their "# vX.Y.Z" comments up to date; uv updates uv.lock (which pyproject's exclude-newer also holds back
+# by 7 days); docker updates the dev container's base image. Merging stays the maintainers'.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+  - package-ecosystem: uv
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7, semver-major-days: 14 }
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }

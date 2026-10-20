@@ -57,6 +57,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.uv]
+# Supply-chain baseline (homelab-governance, owner 2026-10-18): resolve only releases at least 7 days old, on every
+# machine and in CI; uv older than 0.11.33 is refused.
+exclude-newer = "1 week"
+required-version = ">=0.11.33"
+
 [tool.black]
 line-length = 88
 target-version = ['py310']
