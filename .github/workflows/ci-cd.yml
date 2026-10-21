@@ -8,182 +8,268 @@ on:
   pull_request:
     branches: [ main ]
 
+# Supply-chain baseline (homelab-governance, 2026-10-20): every action pinned to a full commit SHA with its tag as a
+# comment, every tool by exact version, checkouts keep no token. The workflow grants nothing; each job asks for exactly
+# what it needs. The release path publishes by PyPI trusted publishing (OIDC): no API token, and `id-token: write` only
+# on the two jobs that upload (TestPyPI, then PyPI). Nothing that installs or runs a package shares a job with the token,
+# and no job on the release path restores a cache.
+permissions: {}
+
 jobs:
   # Run critical tests that catch MCP protocol issues
   critical-tests:
     name: Critical MCP Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
-    
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: '3.12'
-    
+
     - name: Install package
       run: |
-        python -m pip install --upgrade pip
         pip install -e ".[dev]"
-    
+
     - name: Test CLI entry point (catches coroutine issues)
       run: |
         python -m ascom_mcp --version
         python -m ascom_mcp --help
-    
+
     - name: Test server startup with MCP protocol
       run: |
         python -m pytest tests/integration/test_mcp_server_startup.py -v
-    
+
     - name: Test Claude Desktop integration
       run: |
         python -m pytest tests/integration/test_claude_desktop_integration.py -v
-    
+
     - name: Install MCP Inspector
-      run: |
-        npm install -g @modelcontextprotocol/inspector
-    
+      # a CLI by exact version (2026-10-08), with no lockfile to install from
+      run: | # zizmor: ignore[adhoc-packages]
+        npm install -g @modelcontextprotocol/inspector@2.10.1
+
     - name: Test with MCP Inspector
       run: |
         timeout 10 mcp-inspector python -- -m ascom_mcp || true
         # The timeout is expected, we just want to ensure it starts
 
+  # uv.lock matches pyproject.toml, its exclude-newer cooldown included
+  lock:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      with:
+        # uv by exact version (>= pyproject required-version), with the sha256 of uv-x86_64-unknown-linux-gnu.tar.gz
+        # (the release digest, checked 2026-10-20), since this Action's built-in list stops at 0.12.17. Bump both together.
+        version: "0.12.24"
+        checksum: "b4dfaef47d491a7296981f8374a4595f55dbf84e8937c8ecd2983574d8bb3da6"
+        enable-cache: false
+    - run: uv lock --check
+
+  # Security audit of the workflows and dependabot.yml (config: .github/zizmor.yml). The action runs zizmor's container
+  # image by version and digest; results go to the log, not to code scanning.
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+      with:
+        version: "1.30.1"
+        advanced-security: false
+
   # Standard test matrix
   test:
     needs: critical-tests
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12"]
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install -e ".[dev]"
-    
+
     - name: Run tests
       run: |
         pytest -v --cov=ascom_mcp --cov-report=xml
-    
+
     - name: Upload coverage
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
       with:
         file: ./coverage.xml
 
   # Build and validate packages
   build:
-    needs: test
+    needs: [test, lock]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-    - uses: actions/checkout@v4
-    
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: '3.12'
-    
+
     - name: Install build tools
       run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-    
+        pip install build==1.6.1 twine==7.0.0
+
     - name: Build packages
       run: python -m build
-    
+
     - name: Check package with twine
       run: twine check dist/*
-    
+
     - name: Test package installation
       run: |
         pip install dist/*.whl
         mcp-server-ascom --version
-    
+
+    # v4, not v3: GitHub blocks upload-artifact and download-artifact v3 on github.com (their v3.2.2 and v3.1.0
+    # release notes: "deprecated on github.com and should not be used"), so the release path could not run on v3.
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: dist
         path: dist/
+        if-no-files-found: error
 
-  # Publish to Test PyPI first (for tags)
+  # Publish to TestPyPI first (for tags). Trusted publishing: TestPyPI must list this repository, ci-cd.yml and the
+  # test-pypi environment as a (pending) trusted publisher.
   test-release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     environment: test-pypi
+    permissions:
+      id-token: write # TestPyPI trusted publishing (OIDC); nothing else
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         name: dist
         path: dist/
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
-    - name: Install twine
-      run: pip install twine
-    
-    - name: Publish to Test PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
-      run: |
-        twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-    
-    - name: Test installation from Test PyPI
-      run: |
-        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ mcp-server-ascom
-        mcp-server-ascom --version
 
-  # Release to PyPI (after test succeeds)
-  release:
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+  # Installs what TestPyPI now serves, in a job without the publishing token
+  test-release-check:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: test-release
     runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.12'
+
+    - name: Test installation from Test PyPI
+      env:
+        VERSION: ${{ github.ref_name }}
+      run: |
+        sleep 30  # Give TestPyPI time to serve the new version
+        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "mcp-server-ascom==${VERSION#v}"
+        mcp-server-ascom --version
+
+  # Release to PyPI (after the TestPyPI check). Trusted publishing: PyPI's mcp-server-ascom project must list this
+  # repository, ci-cd.yml and the pypi environment as a trusted publisher.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test-release-check
+    runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      contents: write
-      id-token: write  # For trusted publishing when available
-    
+      id-token: write # PyPI trusted publishing (OIDC); nothing else
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         name: dist
         path: dist/
-    
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/*
-        generate_release_notes: true
-        draft: false
-        prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
-    
+
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  # The GitHub release with the same files, once PyPI has them. The runner's gh CLI does what
+  # softprops/action-gh-release@v1 did (a Node 16 action), without a third-party action holding the write token.
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the release and uploads dist/*
+    steps:
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
-        password: ${{ secrets.PYPI_TOKEN }}
-    
+        name: dist
+        path: dist/
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ github.ref_name }}
+        PRERELEASE: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+      run: |
+        flags=(--generate-notes --verify-tag)
+        if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+        gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "$TAG" "${flags[@]}"
+
+  # Installs the published release, in a job without any token grant
+  verify-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.12'
+
     - name: Verify PyPI Installation
+      env:
+        VERSION: ${{ github.ref_name }}
       run: |
         sleep 30  # Give PyPI time to update
-        pip install --no-cache-dir mcp-server-ascom==${{ github.ref_name }}
+        pip install --no-cache-dir "mcp-server-ascom==${VERSION#v}"
         mcp-server-ascom --version
-    
+
     - name: Test with Claude Desktop config
       run: |
         # Create a test config
@@ -197,7 +283,7 @@ jobs:
           }
         }
         EOF
-        
+
         # Test uvx installation
-        pip install uv
+        pip install uv==0.12.24
         uvx mcp-server-ascom --version
