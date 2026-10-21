@@ -40,7 +40,9 @@ jobs:
       uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
+        # An upload failure does not fail the job (as in ci-cd.yml): tokenless uploads share Codecov's rate limit and
+        # got "429 - Rate limit reached" (2026-10-20). Coverage itself is still measured by the test step.
+        fail_ci_if_error: false
 
   # Full matrix test only on releases or manual trigger
   full-test:

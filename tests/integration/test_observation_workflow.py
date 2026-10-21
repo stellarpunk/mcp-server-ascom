@@ -10,6 +10,9 @@ from fastmcp import Client
 
 from ascom_mcp.server_fastmcp import create_server
 
+# These tests talk to a running seestar simulator on localhost:4700 (see tests/conftest.py for how to enable them).
+pytestmark = pytest.mark.requires_simulator
+
 
 class TestObservationWorkflow:
     """Test complete observation session workflows."""
@@ -21,7 +24,7 @@ class TestObservationWorkflow:
             "ASCOM_KNOWN_DEVICES": "localhost:4700:seestar_simulator",
             "ASCOM_SKIP_UDP_DISCOVERY": "true"
         }):
-            server = await create_server()
+            server = create_server()  # synchronous since the FastMCP 2.0 migration
             async with Client(server) as client:
                 yield client
                 

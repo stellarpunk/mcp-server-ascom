@@ -1,11 +1,12 @@
 """Unit tests for device manager."""
 
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ascom_mcp.devices.manager import ConnectedDevice, DeviceInfo, DeviceManager
-from ascom_mcp.utils.errors import DeviceNotFoundError
+# DeviceManager raises the DeviceNotFoundError defined in its own module (not the one in ascom_mcp.utils.errors)
+from ascom_mcp.devices.manager import ConnectedDevice, DeviceInfo, DeviceManager, DeviceNotFoundError
 
 
 class TestDeviceInfo:
@@ -151,6 +152,9 @@ class TestDeviceManager:
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         mock_camera = MagicMock()
         connected = ConnectedDevice(device_info, mock_camera)
+        # Both stamps a second back: Windows' clock can return the same instant twice, so "refreshed" must be
+        # visible as later than connected_at even then.
+        connected.connected_at = connected.last_used = connected.connected_at - timedelta(seconds=1)
         manager._connected_devices["camera_0"] = connected
 
         result = manager.get_connected_device("camera_0")
@@ -178,7 +182,7 @@ class TestDeviceManager:
         assert info["connected"] is True
         assert info["name"] == "Test Scope"
         assert info["driver_info"] == "Mock Driver v1.0"
-        assert info["can_slew"] is True
+        # Capabilities (can_slew, ...) left get_device_info in v0.4.0 (04554cf); telescope_connect reports them.
 
     @pytest.mark.asyncio
     async def test_shutdown(self, mock_telescope):
