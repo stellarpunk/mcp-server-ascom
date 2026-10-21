@@ -36,8 +36,9 @@ jobs:
 
     - name: Build DevContainer
       run: |
-        # Build the devcontainer without features to avoid auth issues
-        devcontainer build --workspace-folder . --skip-post-create
+        # `devcontainer build` only builds the image; lifecycle commands (postCreateCommand, ...) run on `up`, never
+        # here. The CLI no longer accepts --skip-post-create (2026-10-20: "Unknown arguments: skip-post-create").
+        devcontainer build --workspace-folder .
 
     - name: Test Docker Compose Build
       run: |
@@ -64,9 +65,11 @@ jobs:
 
     - name: Validate devcontainer.json
       run: |
-        # Check if devcontainer.json exists and is valid JSON
+        # devcontainer.json is JSONC: whole-line // comments are removed before jq parses it. Any other comment form
+        # still fails this check.
         if [ -f .devcontainer/devcontainer.json ]; then
-          jq . .devcontainer/devcontainer.json > /dev/null || exit 1
+          sed -E 's#^[[:space:]]*//.*$##' .devcontainer/devcontainer.json > "$RUNNER_TEMP/devcontainer.json"
+          jq . "$RUNNER_TEMP/devcontainer.json" > /dev/null || exit 1
           echo "✅ devcontainer.json is valid"
         else
           echo "❌ devcontainer.json not found"
@@ -80,7 +83,7 @@ jobs:
         [ -f docker-compose.yml ] || echo "❌ docker-compose.yml missing"
         
         # Check hostRequirements in devcontainer.json
-        jq -r '.hostRequirements' .devcontainer/devcontainer.json || echo "⚠️  No hostRequirements specified"
+        jq -r '.hostRequirements' "$RUNNER_TEMP/devcontainer.json" || echo "⚠️  No hostRequirements specified"
         
     - name: Test MCP Server Import
       run: |

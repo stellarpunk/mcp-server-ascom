@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ascom_mcp.devices.manager import ConnectedDevice, DeviceInfo, DeviceManager
-from ascom_mcp.utils.errors import DeviceNotFoundError
+# DeviceManager raises the DeviceNotFoundError defined in its own module (not the one in ascom_mcp.utils.errors)
+from ascom_mcp.devices.manager import ConnectedDevice, DeviceInfo, DeviceManager, DeviceNotFoundError
 
 
 class TestDeviceInfo:
@@ -178,7 +178,7 @@ class TestDeviceManager:
         assert info["connected"] is True
         assert info["name"] == "Test Scope"
         assert info["driver_info"] == "Mock Driver v1.0"
-        assert info["can_slew"] is True
+        # Capabilities (can_slew, ...) left get_device_info in v0.4.0 (04554cf); telescope_connect reports them.
 
     @pytest.mark.asyncio
     async def test_shutdown(self, mock_telescope):

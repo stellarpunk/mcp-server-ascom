@@ -13,6 +13,7 @@ from ascom_mcp.server_fastmcp import create_server
 class TestIoTConnectionPattern:
     """Test IoT-style device connection without discovery."""
     
+    @pytest.mark.requires_seestar  # connects to seestar_alp on localhost:5555 (see tests/conftest.py)
     @pytest.mark.asyncio
     async def test_connect_with_direct_string(self):
         """Test connecting using direct connection string."""
@@ -30,6 +31,7 @@ class TestIoTConnectionPattern:
                 assert data["success"] is True
                 assert "seestar" in data["message"].lower()
                 
+    @pytest.mark.requires_seestar  # connects to seestar_alp on localhost:5555 (see tests/conftest.py)
     @pytest.mark.asyncio
     async def test_connect_from_persistent_state(self):
         """Test connecting to device from persistent state."""
@@ -65,19 +67,19 @@ class TestIoTConnectionPattern:
         with patch.dict(os.environ, {}, clear=True):
             server = create_server()
             async with Client(server) as client:
-                # Try to connect to unknown device
-                try:
-                    await client.call_tool(
-                        "telescope_connect",
-                        {"device_id": "unknown_device"}
-                    )
-                    assert False, "Should have raised error"
-                except Exception as e:
-                    error_msg = str(e)
-                    # Should suggest helpful options
-                    assert "discover_ascom_devices" in error_msg
-                    assert "host:port" in error_msg
-                    assert "ASCOM_DIRECT_DEVICES" in error_msg
+                # Try to connect to unknown device. telescope_connect reports a failure in its result
+                # (success: false) rather than raising.
+                result = await client.call_tool(
+                    "telescope_connect",
+                    {"device_id": "unknown_device"}
+                )
+                data = json.loads(result.content[0].text)
+                assert data["success"] is False
+                error_msg = data["error"]
+                # Should suggest helpful options
+                assert "discover_ascom_devices" in error_msg
+                assert "host:port" in error_msg
+                assert "ASCOM_DIRECT_DEVICES" in error_msg
                     
     @pytest.mark.asyncio
     async def test_discovery_not_automatic(self):
@@ -85,15 +87,17 @@ class TestIoTConnectionPattern:
         with patch.dict(os.environ, {}, clear=True):
             server = create_server()
             async with Client(server) as client:
-                # Get device list without discovery
-                result = await client.call_tool("list_devices", {})
-                data = json.loads(result.content[0].text)
+                # Get device list without discovery (the list_devices tool became the
+                # ascom://devices/available resource)
+                contents = await client.read_resource("ascom://devices/available")
+                data = json.loads(contents[0].text)
                 
                 # Should have no devices (or only from config/state)
                 # Not from UDP discovery
-                assert data["success"] is True
+                assert isinstance(data["devices"], list)
                 # No assertion on device count - depends on state/config
                 
+    @pytest.mark.requires_seestar  # connects to seestar_alp on localhost:5555 (see tests/conftest.py)
     @pytest.mark.asyncio
     async def test_multiple_connection_methods(self):
         """Test various ways to specify device connection."""

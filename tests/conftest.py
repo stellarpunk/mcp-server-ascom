@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import asyncio
+import os
 import uuid
 from typing import Any
 from unittest.mock import MagicMock, AsyncMock
@@ -9,6 +10,23 @@ import pytest
 import structlog
 from fastmcp import Context
 from mcp.types import CallToolRequest, InitializeRequest, ListToolsRequest
+
+# Tests that need live equipment are skipped (with the reason in the report) unless the environment says it is there
+# (2026-10-20; CI runners have neither):
+#   requires_simulator  a seestar simulator on localhost:4700   -> ASCOM_TEST_SIMULATOR=1
+#   requires_seestar    seestar_alp on localhost:5555           -> ASCOM_TEST_SEESTAR=1
+_LIVE_MARKERS = {
+    "requires_simulator": "ASCOM_TEST_SIMULATOR",
+    "requires_seestar": "ASCOM_TEST_SEESTAR",
+}
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip live-equipment tests whose equipment is not declared present."""
+    for item in items:
+        for marker, env_var in _LIVE_MARKERS.items():
+            if item.get_closest_marker(marker) and os.getenv(env_var) != "1":
+                item.add_marker(pytest.mark.skip(reason=f"{marker}: set {env_var}=1 when it is running"))
 
 
 @pytest.fixture

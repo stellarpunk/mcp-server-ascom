@@ -41,13 +41,11 @@ jobs:
         python -m ascom_mcp --version
         python -m ascom_mcp --help
 
-    - name: Test server startup with MCP protocol
+    # The stdio startup and Claude Desktop tests this job used to run were removed in the FastMCP 2.0 migration
+    # (64f6349, 2025-07-31); the in-process MCP client tests in tests/integration replaced them.
+    - name: Test MCP protocol integration
       run: |
-        python -m pytest tests/integration/test_mcp_server_startup.py -v
-
-    - name: Test Claude Desktop integration
-      run: |
-        python -m pytest tests/integration/test_claude_desktop_integration.py -v
+        python -m pytest tests/integration -v
 
     - name: Install MCP Inspector
       # a CLI by exact version (2026-10-08), with no lockfile to install from
