@@ -106,7 +106,7 @@ test_images/
 
 # Temporary debug files
 debug_*.py
-test_*.py
+/test_*.py
 send_init.py
 test_fastmcp_*.py
 test_stdio_*.py
