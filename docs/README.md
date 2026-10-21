@@ -5,6 +5,7 @@
 ### Getting Started
 - **[Installation & Setup](GETTING_STARTED.md)** - Get up and running
 - **[API Reference](API.md)** - All available tools
+- **[SDK Guide](SDK_GUIDE.md)** - Type-safe Python SDK (v0.5.0+)
 - **[Troubleshooting](troubleshooting.md)** - Fix common issues
 
 ### Integration Guides  

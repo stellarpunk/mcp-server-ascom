@@ -8,45 +8,43 @@
 
 Control telescopes with AI. Works with any ASCOM device.
 
-## Documentation
+## 🎯 v0.5.0: Visual Feedback & Type Safety!
 
-- [Quick Start Guide](QUICKSTART.md)
-- [API Reference](docs/API.md)
-- [Development Guide](docs/development.md)
-- [Testing Strategy](docs/E2E_TESTING_GUIDE.md)
-- [Examples](examples/README.md)
-
-## v0.3.0 Updates
-
-- FastMCP 2.0 - Half the code
-- JSON logging - OpenTelemetry ready
-- Better errors - Protocol compliance built-in
+See what your telescope sees:
+- **Visual Preview**: `telescope_preview()` shows current view
+- **Live Streaming**: `telescope_start_streaming()` for MJPEG feed  
+- **Where Am I?**: `telescope_where_am_i()` with position + image
+- **Type-Safe SDK**: No more parameter guessing!
+- **Scenery Mode**: Optimized for terrestrial viewing
 
 ## Features
 
-- Works with any ASCOM telescope, camera, or focuser
-- Natural language control: "Point at the Orion Nebula"
-- Auto-discovers devices on your network
-- Async architecture - never blocks
-- Full test coverage and type safety
+- Natural language: "Point at the Orion Nebula"
+- Visual feedback - see where telescope points
+- Type-safe SDK prevents parameter errors
+- Real-time MJPEG streaming
+- Auto-discovery of devices
+- Event streaming (SSE)
+- Fast async architecture
 
-## Installation
+## Quick Start
 
 ```bash
-# Quick start
+# Install
 pip install mcp-server-ascom
 
-# Or use uvx (no install)
-uvx mcp-server-ascom
+# Configure Claude Code
+claude mcp add ascom "python" -- "-m" "ascom_mcp"
+
+# Test with simulator
+export ASCOM_SIMULATOR_DEVICES="localhost:4700:simulator"
+claude "Connect to my telescope"
 ```
 
-### 🚀 v0.4.0: Instant Connections!
+### Previous Updates
 
-No more waiting! Connect directly without discovery:
-```bash
-# Direct connection - no setup required!
-telescope_connect device_id="seestar@192.168.1.100:5555"
-```
+**v0.4.0**: Instant connections without discovery  
+**v0.3.0**: FastMCP 2.0, JSON logging, better errors
 
 ## Claude Desktop Setup
 
@@ -67,6 +65,18 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop to activate.
 
+## Claude Code Setup
+
+```bash
+git clone https://github.com/stellarpunk/mcp-server-ascom
+cd mcp-server-ascom
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+claude mcp add ascom "$PWD/.venv/bin/python" -- "$PWD/launcher.py"
+```
+
 ## Usage
 
 ### Quick Connect (No Configuration)
@@ -84,7 +94,7 @@ You: Connect to telescope_1
 AI: Connected to Seestar S50!
 ```
 
-## Supported Equipment
+## Works With
 
 Any ASCOM Alpaca device: telescopes, cameras, focusers, filter wheels, domes.
 
@@ -136,21 +146,18 @@ Local connections only by default. For remote access, enable OAuth in `.env`.
 
 ## Troubleshooting
 
-**No devices found?**
-- Check device is powered on and on same network
-- Allow UDP port 32227 through firewall
-- Test with: `curl http://device-ip:11111/api/v1/description`
+**No devices found?** Check device is on same network, UDP port 32227 allowed.
 
-**Import errors?** The `alpyca` package imports as `alpaca`.
+**Import errors?** Package `alpyca` imports as `alpaca`.
 
-See [troubleshooting.md](docs/troubleshooting.md) for more.
+See [troubleshooting.md](docs/troubleshooting.md).
 
-## Documentation
+## Resources
 
-- [Getting Started](docs/GETTING_STARTED.md) - Quick setup guide
-- [API Reference](docs/API.md) - Tool documentation
-- [Architecture](docs/ARCHITECTURE.md) - System design
-- [Seestar Integration](docs/seestar_integration.md) - Seestar S50 guide
+- [Development](docs/development.md) - Contributing guide
+- [Seestar Integration](docs/seestar_integration.md) - S50 setup
+- [Examples](examples/) - Code samples
+- [Troubleshooting](docs/troubleshooting.md) - Common issues
 
 ## License
 

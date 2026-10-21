@@ -1,6 +1,14 @@
-# CLAUDE.md - ASCOM MCP Server (v0.4.0)
+# CLAUDE.md - ASCOM MCP Server (v0.5.0)
 
-Bridge ASCOM devices to Claude via MCP. **Now with instant connections!**
+Bridge ASCOM devices to Claude via MCP. **Now with Visual Feedback & Type-Safe SDK!**
+
+## What's New in v0.5.0
+- 👁️ **Visual Feedback**: See where telescope points with preview tools
+- 🎯 **Type-Safe SDK**: Pydantic models prevent parameter errors
+- 📹 **MJPEG Streaming**: Live video feeds for real-time monitoring
+- 🏙️ **Scenery Mode**: Optimized for terrestrial viewing (SpatialLM ready!)
+- ✅ **Parameter Validation**: Prevents Error 207 and other mistakes
+- 🚀 **Helper Methods**: Easy tools for common operations
 
 ## Quick Start
 
@@ -16,6 +24,14 @@ pytest tests/unit/ -v         # Unit tests (40+ passing ✅)
 pytest tests/integration/ -v  # Integration tests (NEW!)
 pytest tests/mcp/ -v          # MCP protocol tests
 ```
+
+## Claude Code MCP Configuration
+
+```bash
+claude mcp add ascom "/path/to/.venv/bin/python" -- "/path/to/launcher.py"
+```
+
+`launcher.py` detects transport (stdio for Claude Code, HTTP for manual runs) and enables hot-reload.
 
 ## Architecture
 
@@ -76,7 +92,40 @@ telescope_custom_action(
 )
 ```
 
-### Basic Operations
+### Visual Feedback Operations (NEW!)
+```python
+# See where telescope is pointing
+telescope_where_am_i(device_id="telescope_1")
+# Returns: position + preview image
+
+# Get current view
+telescope_preview(device_id="telescope_1")
+# Returns: JPEG image in base64
+
+# Start live streaming
+telescope_start_streaming(device_id="telescope_1")
+# Returns: MJPEG URL for browser
+
+# Start scenery mode for terrestrial viewing
+telescope_custom_action(device_id="telescope_1", 
+    action="method_sync",
+    parameters='{"method": "iscope_start_view", "params": {"mode": "scenery"}}')
+```
+
+### Basic Operations (Now with Validation!)
+```python
+# Safe tracking control - no more Error 207!
+telescope_custom_action(device_id="telescope_1",
+    action="method_sync", 
+    parameters='{"method": "scope_set_track_state", "params": true}')
+
+# Movement with validated parameters
+telescope_custom_action(device_id="telescope_1",
+    action="method_sync",
+    parameters='{"method": "scope_speed_move", "params": {"speed": 300, "angle": 0, "dur_sec": 3}}')
+```
+
+### Classic Operations (Still Work)
 ```python
 # Go to coordinates
 telescope_goto(device_id="Telescope_0", ra=5.5, dec=-5.0)

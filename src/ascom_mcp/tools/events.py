@@ -10,6 +10,7 @@ from typing import Any, Optional
 from ascom_mcp.ascom_logging import StructuredLogger
 from ascom_mcp.devices.manager import DeviceManager
 from ascom_mcp.resources.event_stream import EventStreamManager
+# from .events_polling import EventPollingTools  # Temporarily commented out
 
 logger = StructuredLogger("ascom.tools.events")
 
@@ -27,6 +28,7 @@ class EventTools:
         self.device_manager = device_manager
         self.event_manager = event_manager
         self._event_handlers = {}
+        # self.polling_tools = EventPollingTools(device_manager)  # Temporarily commented out
 
     async def get_event_history(
         self,
@@ -62,6 +64,24 @@ class EventTools:
                 event_types=event_types,
                 limit=count,
             )
+            
+            # If no events found and device supports polling, try polling
+            # Temporarily disabled polling fallback
+            # if len(events["events"]) == 0 and device_info.get("port") == 5555:
+            #     logger.info(f"No SSE events found, trying polling fallback for {device_id}")
+            #     
+            #     # Try polling approach
+            #     poll_result = await self.polling_tools.poll_device_events(device_id)
+            #     if poll_result.get("success"):
+            #         return {
+            #             "success": True,
+            #             "device_id": device_id,
+            #             "device_name": device_info["name"],
+            #             "event_count": len(poll_result["events"]),
+            #             "events": poll_result["events"],
+            #             "available_types": [],
+            #             "method": "polling (SSE fallback)"
+            #         }
 
             return {
                 "success": True,
@@ -70,6 +90,7 @@ class EventTools:
                 "event_count": len(events["events"]),
                 "events": events["events"],
                 "available_types": events.get("available_types", []),
+                "method": "SSE" if len(events["events"]) > 0 else "none"
             }
 
         except Exception as e:

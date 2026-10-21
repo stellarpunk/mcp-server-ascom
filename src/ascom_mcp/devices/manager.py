@@ -382,11 +382,16 @@ class DeviceManager:
                 logger.info(f"Successfully connected to {device_info.name}")
                 
                 # Notify event callbacks about connection
+                logger.debug(f"Checking for on_device_connected callback. Callbacks: {list(self._event_callbacks.keys())}")
                 if "on_device_connected" in self._event_callbacks:
+                    logger.debug(f"Calling on_device_connected callback for {device_id}")
                     try:
                         await self._event_callbacks["on_device_connected"](device_id, device_info)
+                        logger.debug(f"on_device_connected callback completed for {device_id}")
                     except Exception as e:
-                        logger.error(f"Error in device connected callback: {e}")
+                        logger.error(f"Error in device connected callback: {e}", exc_info=True)
+                else:
+                    logger.debug("No on_device_connected callback registered")
                         
                 return connected
 

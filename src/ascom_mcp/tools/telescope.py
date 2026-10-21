@@ -451,3 +451,41 @@ class TelescopeTools(BaseDeviceTools):
                 "action": action,
                 "message": f"Failed to execute action '{action}'",
             }
+    
+    async def set_tracking(self, device_id: str, enabled: bool) -> dict[str, Any]:
+        """
+        Set telescope tracking state (helper to prevent Error 207).
+        
+        This helper ensures the correct parameter format is used,
+        preventing the common error caused by using {"on": true}
+        instead of a direct boolean.
+        
+        Args:
+            device_id: Connected telescope ID
+            enabled: True to enable tracking, False to disable
+        """
+        logger.info(f"Setting tracking state: {enabled}")
+        
+        # Use validated format - direct boolean, NOT {"on": true}!
+        return await self.custom_action(
+            device_id,
+            "method_sync",
+            {"method": "scope_set_track_state", "params": enabled}
+        )
+        
+    async def start_scenery_mode(self, device_id: str) -> dict[str, Any]:
+        """
+        Start scenery mode for terrestrial viewing.
+        
+        Optimized for landscape and cityscape observation.
+        
+        Args:
+            device_id: Connected telescope ID
+        """
+        logger.info("Starting scenery mode")
+        
+        return await self.custom_action(
+            device_id,
+            "method_sync", 
+            {"method": "iscope_start_view", "params": {"mode": "scenery"}}
+        )

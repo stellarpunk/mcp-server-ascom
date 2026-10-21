@@ -24,27 +24,64 @@ AI Assistant ↔ MCP Server ↔ seestar_alp ↔ Seestar S50
    mcp-server-ascom
    ```
 
-3. **In Claude**: "Discover my telescope"
+3. **In Claude**: Connect directly or discover
+   ```
+   telescope_connect device_id="telescope_1"
+   # Or: telescope_connect device_id="seestar@seestar.local:5555"
+   ```
 
-## Example Astronomy Session
+## Visual Feedback Examples (v0.5.0+)
 
+### See What Telescope Sees
 ```
-User: "Connect to my Seestar"
-AI: Discovering devices... Found Seestar S50 at seestar.local
-    Connected successfully
+User: "Where is my telescope pointing?"
+AI: [Shows preview image]
+    Currently at: RA 5h 35m, Dec -5° 27'
+    Tracking: Enabled
+    Mode: Star
+```
 
-User: "Show me the Moon"
-AI: Calculating current Moon position...
-    Slewing to Moon (Alt: 45°, Az: 220°)
+### Live Streaming
+```
+User: "Start live view from telescope"
+AI: Starting video stream...
+    MJPEG URL: http://seestar.local:5432/img/live_stacking
+    Open this URL in your browser for live view
+```
+
+### Scenery Mode (Terrestrial)
+```
+User: "Switch to scenery mode and look at the city skyline"
+AI: Switching to scenery mode...
+    [Shows preview of current view]
+    Ready for terrestrial observation
+```
+
+## Example Sessions
+
+### Astronomy Session
+```
+User: "Connect to my Seestar and show me what it sees"
+AI: Connected to Seestar S50
+    [Shows current view image]
+    Currently pointing at: RA 12h 30m, Dec +45° 15'
+
+User: "Point at the Orion Nebula" 
+AI: Slewing to M42...
+    [Shows preview after movement]
+    Target acquired at RA: 5h 35m 17s, Dec: -5° 27' 00"
+```
+
+### Terrestrial Session
+```
+User: "Start scenery mode for viewing Manhattan"
+AI: Starting scenery mode...
+    [Shows current view]
     
-User: "Point at the Orion Nebula"
-AI: Slewing to M42 (RA: 5h 35m 17s, Dec: -5° 27' 00")
-    Target acquired
-
-User: "Take a 30 second exposure of the Andromeda Galaxy"  
-AI: Slewing to M31 (RA: 0h 42m 44s, Dec: +41° 16' 09")
-    Capturing 30s light frame...
-    Image complete
+User: "Go to the Empire State Building preset"
+AI: Moving to preset...
+    [Shows view of Empire State Building]
+    Focus adjusted for ~2 mile distance
 ```
 
 ## Popular Seestar Targets
