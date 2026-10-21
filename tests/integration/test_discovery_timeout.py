@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import sys
 import time
 from unittest.mock import patch
 
@@ -12,6 +13,12 @@ from ascom_mcp.devices.manager import DeviceManager
 class TestDiscoveryTimeout:
     """Test discovery timeout and optimization strategies."""
 
+    @pytest.mark.xfail(
+        sys.platform == "win32",
+        strict=False,
+        reason="Windows retries a refused localhost connection for about 2 s, so the known-device and simulator "
+        "probes alone exceed the 1 s budget there",
+    )
     @pytest.mark.asyncio
     async def test_discovery_with_skip_udp(self):
         """Test that ASCOM_SKIP_UDP_DISCOVERY actually skips UDP discovery."""

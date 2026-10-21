@@ -1,5 +1,6 @@
 """Unit tests for device manager."""
 
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -151,6 +152,9 @@ class TestDeviceManager:
         device_info = DeviceInfo({"DeviceType": "Camera", "DeviceNumber": 0})
         mock_camera = MagicMock()
         connected = ConnectedDevice(device_info, mock_camera)
+        # Both stamps a second back: Windows' clock can return the same instant twice, so "refreshed" must be
+        # visible as later than connected_at even then.
+        connected.connected_at = connected.last_used = connected.connected_at - timedelta(seconds=1)
         manager._connected_devices["camera_0"] = connected
 
         result = manager.get_connected_device("camera_0")
