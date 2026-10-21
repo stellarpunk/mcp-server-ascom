@@ -2,7 +2,7 @@
 # Modern multi-stage Dockerfile for MCP Server ASCOM using UV
 
 # Build stage
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Install UV for fast dependency management
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -73,7 +73,7 @@ COPY . .
 RUN uv pip install -e .
 
 # Runtime stage
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Copy UV from official image for devcontainer support
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
