@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastmcp import FastMCP, Context
-from fastmcp.exceptions import ToolError
+from fastmcp.exceptions import ToolError as _FastMCPToolError
 
 from . import __version__
 from .ascom_logging import StructuredLogger
@@ -26,6 +26,27 @@ from .tools.camera import CameraTools
 from .tools.discovery import DiscoveryTools
 from .tools.events import EventTools
 from .tools.telescope import TelescopeTools
+
+
+class ToolError(_FastMCPToolError):
+    """fastmcp ToolError that also carries code, recoverable and details.
+
+    fastmcp's ToolError takes only a message; the tools below pass these
+    keyword arguments, which raised TypeError instead of a ToolError.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        code: str | None = None,
+        recoverable: bool = False,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.recoverable = recoverable
+        self.details = details or {}
+
 
 # Structured logger (logs to stderr per MCP spec)
 logger = StructuredLogger("ascom.server")

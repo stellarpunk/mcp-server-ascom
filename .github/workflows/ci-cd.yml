@@ -159,6 +159,9 @@ jobs:
 
     # v4, not v3: GitHub blocks upload-artifact and download-artifact v3 on github.com (their v3.2.2 and v3.1.0
     # release notes: "deprecated on github.com and should not be used"), so the release path could not run on v3.
+    # v4 behaviour checked against each use (2026-10-20): v4.6.2 and v4.3.0 are the last v4 releases. Names must be
+    # unique per run and an artifact is immutable: 'dist' is uploaded once, by this job (no matrix), and only
+    # downloaded after. Hidden files are left out: python -m build writes none to dist/.
     - name: Upload artifacts
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
