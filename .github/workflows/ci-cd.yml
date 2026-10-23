@@ -66,7 +66,7 @@ jobs:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       with:
         persist-credentials: false
-    - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+    - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       with:
         # uv by exact version (>= pyproject required-version), with the sha256 of uv-x86_64-unknown-linux-gnu.tar.gz
         # (the release digest, checked 2026-10-20), since this Action's built-in list stops at 0.12.17. Bump both together.
